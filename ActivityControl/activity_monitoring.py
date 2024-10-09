@@ -2,6 +2,7 @@ import discord
 import json
 import asyncio
 import os
+from DataBase.db_control import check_and_initialize_activities_db, create_server_table, insert_activity
 
 JSON_DIR = 'ActivityControl/jsons'
 
@@ -23,9 +24,8 @@ def save_activity_data(guild_id, activity_data):
         json.dump(activity_data, file, indent=4)
 
 # Проверка активности всех участников сервера
-async def check_all_members(guild):
+async def check_all_members(guild, db_conn):
     activity_data = {}
-
     for member in guild.members:
         if member.activity and member.activity.type == discord.ActivityType.playing:
             activity_name = member.activity.name
@@ -38,14 +38,19 @@ async def check_all_members(guild):
                     'timestamp': str(discord.utils.utcnow())
                 }]
             }
+            insert_activity(db_conn, guild.id, member_id, activity_name)
 
     save_activity_data(guild.id, activity_data)
-    print(f"Activity data updated for server {guild.id}.")
 
 
 # Проверка всех серверов каждые 10 минут
 async def periodic_check_for_guilds(bot):
+    db_conn = check_and_initialize_activities_db()
     while True:
+        server_names = []
         for guild in bot.guilds:
-            await check_all_members(guild)
+            create_server_table(db_conn, guild.id)
+            await check_all_members(guild, db_conn)
+            server_names.append(guild.name)
+        print("Activity data updated for servers: " + ", ".join(server_names))
         await asyncio.sleep(600)

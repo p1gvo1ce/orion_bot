@@ -4,7 +4,7 @@ import tracemalloc
 import asyncio
 import os
 
-from DataBase.db_control import check_and_initialize_db, get_token_from_db, request_token
+from DataBase.db_control import check_and_initialize_main_db, get_token_from_db, request_token
 from ActivityControl.activity_monitoring import periodic_check_for_guilds
 
 tracemalloc.start()
@@ -47,7 +47,7 @@ async def run_bot(token, conn):
                 os.system("python bot.py")
 
 def main():
-    conn = check_and_initialize_db()
+    conn = check_and_initialize_main_db()
     token = get_token_from_db(conn)
 
     if not token:
