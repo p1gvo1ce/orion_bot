@@ -5,6 +5,7 @@ import asyncio
 import os
 
 from DataBase.db_control import check_and_initialize_db, get_token_from_db, request_token
+from ActivityControl.activity_monitoring import periodic_check_for_guilds
 
 tracemalloc.start()
 
@@ -19,6 +20,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 async def start():
     print(f'Logged in as {bot.user.name}')
+    await periodic_check_for_guilds(bot)
 
 
 def add_listeners():
