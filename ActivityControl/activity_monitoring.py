@@ -1,13 +1,23 @@
 import discord
 import json
 import asyncio
+import os
+
+JSON_DIR = 'ActivityControl/jsons'
+
+# Создание каталога для json
+def ensure_json_directory_exists():
+    if not os.path.exists(JSON_DIR):
+        os.makedirs(JSON_DIR)
+        print(f"Directory {JSON_DIR} created.")
 
 # Создание пути к файлу JSON для каждого сервера
 def get_activity_file_path(guild_id):
-    return f'ActivityControl/jsons/last_activities_{guild_id}.json'
+    return os.path.join(JSON_DIR, f'last_activities_{guild_id}.json')
 
 # Сохранение активностей в JSON
 def save_activity_data(guild_id, activity_data):
+    ensure_json_directory_exists()
     activity_file = get_activity_file_path(guild_id)
     with open(activity_file, 'w') as file:
         json.dump(activity_data, file, indent=4)
