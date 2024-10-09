@@ -2,6 +2,7 @@ import discord
 import json
 import asyncio
 import os
+from datetime import datetime
 from DataBase.db_control import check_and_initialize_activities_db, create_server_table, insert_activity
 
 JSON_DIR = 'ActivityControl/jsons'
@@ -52,5 +53,6 @@ async def periodic_check_for_guilds(bot):
             create_server_table(db_conn, guild.id)
             await check_all_members(guild, db_conn)
             server_names.append(guild.name)
-        print("Activity data updated for servers: " + ", ".join(server_names))
+        current_time = datetime.now().strftime('%Y.%m.%d %H.%M')
+        print(f"[{current_time}] Activity data updated for servers: " + ", ".join(server_names))
         await asyncio.sleep(600)
