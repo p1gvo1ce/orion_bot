@@ -1,12 +1,8 @@
 import os
 import sqlite3
-import datetime
+from datetime import datetime, timedelta, timezone
 
 def check_and_initialize_main_db():
-
-
-
-    # Проверка наличия базы данных main.db
     db_path = os.path.join("DataBase", "main.db")
     if not os.path.exists(db_path):
         conn = sqlite3.connect(db_path)
@@ -16,7 +12,6 @@ def check_and_initialize_main_db():
         print("Создана база данных 'main.db' и таблица 'tokens'.")
     else:
         conn = sqlite3.connect(db_path)
-
     return conn
 
 
@@ -46,7 +41,6 @@ def request_token(conn):
 
 
 def check_and_initialize_activities_db():
-    # Проверка наличия базы данных game_activities.db
     db_path = os.path.join("DataBase", "game_activities.db")
     if not os.path.exists(db_path):
         conn = sqlite3.connect(db_path)
@@ -66,10 +60,38 @@ def create_server_table(conn, guild_id):
 def insert_activity(conn, guild_id, member_id, activity_name):
     c = conn.cursor()
     table_name = f"guild_{guild_id}"
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     prefixed_member_id = f"id_{member_id}"
     c.execute(f"INSERT INTO {table_name} (datetime, member_id, activity_name) VALUES (?, ?, ?)",
               (current_time, prefixed_member_id, activity_name))
     conn.commit()
 def close_connection(conn):
     conn.close()
+
+# Функция для получения данных из базы данных
+def get_top_games(guild_id, days, granularity):
+    conn = sqlite3.connect(os.path.join("DataBase", "game_activities.db"))
+    c = conn.cursor()
+
+    table_name = f"guild_{guild_id}"
+    end_date = datetime.now(timezone.utc)
+    start_date = end_date - timedelta(days=days)
+
+    # Формат даты для SQLite
+    start_date_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
+    end_date_str = end_date.strftime('%Y-%m-%d %H:%M:%S')
+
+    # Запрос для получения активности за последние N дней
+    query = f"""
+        SELECT activity_name, COUNT(DISTINCT member_id)
+        FROM {table_name}
+        WHERE datetime BETWEEN ? AND ?
+        GROUP BY activity_name
+        ORDER BY COUNT(DISTINCT member_id) DESC
+        LIMIT 10;
+    """
+    c.execute(query, (start_date_str, end_date_str))
+    result = c.fetchall()
+    conn.close()
+
+    return result
