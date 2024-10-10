@@ -8,7 +8,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 # Подготовка данных о топ играх и построение графика
-def plot_top_games(guild_id, guild_name, top_games, days, granularity):
+def plot_top_games(guild_id, guild_name, top_games, days, granularity, game = None):
     conn = sqlite3.connect(os.path.join("DataBase", "game_activities.db"))
     c = conn.cursor()
     table_name = f"guild_{guild_id}"
@@ -29,6 +29,8 @@ def plot_top_games(guild_id, guild_name, top_games, days, granularity):
         interval = '1 month'
 
     # Данные для графика
+    if game:
+        top_games = [[game]]
     game_data = {}
     for game in top_games:
         game_name = game[0]
@@ -49,7 +51,6 @@ def plot_top_games(guild_id, guild_name, top_games, days, granularity):
     plt.figure(figsize=(10, 6))
     for game_name, periods in game_data.items():
         if periods:  # Проверяем, есть ли данные
-            print(periods)
             dates = [datetime.strptime(p[0], date_format) for p in periods]
             counts = [p[1] for p in periods]
             plt.plot(dates, counts, label=game_name)
@@ -83,5 +84,12 @@ def top_games_create_embed(top_games, days, granularity):
     description = f"Data for the last {days} days with granularity: {granularity}\n\n"
     for i, game in enumerate(top_games):
         description += f"**{i+1}. {game[0]}** - {game[1]} unique players\n"
+    embed.description = description
+    return embed
+
+# Функция для создания embed
+def popularity_games_create_embed(game, days, granularity):
+    embed = discord.Embed(title=f"{game} Activity", color=discord.Color.blue())
+    description = f"{game} popularity chart for the last {days} days with granularity: {granularity}\n\n"
     embed.description = description
     return embed

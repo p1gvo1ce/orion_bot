@@ -95,3 +95,54 @@ def get_top_games(guild_id, days, granularity):
     conn.close()
 
     return result
+
+# Создание таблицы с настройками сервера в main.db
+def create_guild_table(guild_id):
+    db_path = os.path.join("DataBase", "main.db")
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    table_name = f"guild_{guild_id}"
+
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            param_name TEXT PRIMARY KEY,
+            param_value TEXT
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+# Запись данных в таблицу сервера
+def write_to_guild_settings_db(guild_id, param_name, param_value):
+    db_path = os.path.join("DataBase", "main.db")
+    create_guild_table(guild_id)
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    table_name = f"guild_{guild_id}"
+
+    cursor.execute(f"""
+        INSERT INTO {table_name} (param_name, param_value)
+        VALUES (?, ?)
+        ON CONFLICT(param_name) DO UPDATE SET param_value = excluded.param_value
+    """, (param_name, param_value))
+
+    conn.commit()
+    conn.close()
+
+
+# Чтение данных из таблицы сервера
+def read_from_guild_settings_db(guild_id, param_name):
+    db_path = os.path.join("DataBase", "main.db")
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    table_name = f"guild_{guild_id}"
+
+    cursor.execute(f"SELECT param_value FROM {table_name} WHERE param_name = ?", (param_name,))
+    results = cursor.fetchall()
+
+    conn.close()
+
+    return [result[0] for result in results] if results else []
