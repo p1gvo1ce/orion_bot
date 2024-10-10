@@ -28,13 +28,57 @@ bot_phrases = {
     'Click here to join': {
         'ru': 'Нажми чтобы присоединиться',
         'en': 'Click here to join'
+    },
+    'Time': {
+        'ru': 'Время',
+        'en': 'Time'
+    },
+    'Number of unique players': {
+        'ru': 'Количество уникальных игроков',
+        'en': 'Number of unique players'
+    },
+    'Top games activity on': {
+        'ru': 'Топ игровых активносей на',
+        'en': 'Top games activity on'
+    },
+    'Top': {
+        'ru': 'Топ',
+        'en': 'Top'
+    },
+    'Games Activity': {
+        'ru': 'Игровых Активностей',
+        'en': 'Games Activity'
+    },
+    'Data for the last': {
+        'ru': 'Данные за последние',
+        'en': 'Data for the last'
+    },
+    'days with granularity': {
+        'ru': 'дней с гранулярностью',
+        'en': 'days with granularity'
+    },
+    'unique players': {
+        'ru': 'уникальных игроков',
+        'en': 'unique players'
+    },
+    'popularity chart for the last': {
+        'ru': 'чарт популярности за последние',
+        'en': 'popularity chart for the last'
+    },
+    'Activity': {
+        'ru': 'Активность',
+        'en': 'Activity'
     }
 }
 
 def get_guild_language(guild_id: int) -> str:
     param_name = "language"
     guild_id = f"{guild_id}"
-    language = read_from_guild_settings_db(guild_id, param_name)
+    language = ''
+    try:
+        language = read_from_guild_settings_db(guild_id, param_name)
+    except:
+        pass
 
     if language:
         return language[0]

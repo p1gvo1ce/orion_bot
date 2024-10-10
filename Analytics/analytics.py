@@ -6,11 +6,14 @@ from matplotlib.ticker import MaxNLocator
 import io
 import os
 from datetime import datetime, timedelta, timezone
+from phrases import get_phrase
 
 # Подготовка данных о топ играх и построение графика
-def plot_top_games(guild_id, guild_name, top_games, days, granularity, game = None):
+def plot_top_games(guild, top_games, days, granularity, game = None):
     conn = sqlite3.connect(os.path.join("DataBase", "game_activities.db"))
     c = conn.cursor()
+    guild_id = guild.id
+    guild_name = guild.name
     table_name = f"guild_{guild_id}"
     end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=days)
@@ -50,15 +53,14 @@ def plot_top_games(guild_id, guild_name, top_games, days, granularity, game = No
     # Построение графика
     plt.figure(figsize=(10, 6))
     for game_name, periods in game_data.items():
-        print(game_name)
         if periods:  # Проверяем, есть ли данные
             dates = [datetime.strptime(p[0], date_format) for p in periods]
             counts = [p[1] for p in periods]
             plt.plot(dates, counts, label=game_name)
 
-    plt.xlabel(f'Time ({granularity})')
-    plt.ylabel('Number of unique players')
-    plt.title(f'Top games activity on {guild_name}')
+    plt.xlabel(f'{get_phrase('Time', guild)} ({granularity})')
+    plt.ylabel(get_phrase('Number of unique players', guild))
+    plt.title(f'{get_phrase('Top games activity on', guild)} {guild_name}')
     plt.legend()
 
     # Ограничение количества меток на оси X
@@ -83,17 +85,20 @@ def plot_top_games(guild_id, guild_name, top_games, days, granularity, game = No
     return buf
 
 # Функция для создания embed
-def top_games_create_embed(top_games, days, granularity):
-    embed = discord.Embed(title=f"Top {len(top_games)} Games Activity", color=discord.Color.blue())
-    description = f"Data for the last {days} days with granularity: {granularity}\n\n"
+def top_games_create_embed(top_games, days, granularity, guild):
+    embed = discord.Embed(title=f"{get_phrase('Top', guild)} {len(top_games)} "
+                                f"{get_phrase('Games Activity', guild)}", color=discord.Color.blue())
+    description = (f"{get_phrase('Data for the last', guild)} {days} "
+                   f"{get_phrase('days with granularity', guild)}: {granularity}\n\n")
     for i, game in enumerate(top_games):
-        description += f"**{i+1}. {game[0]}** - {game[1]} unique players\n"
+        description += f"**{i+1}. {game[0]}** - {game[1]} {get_phrase('unique players', guild)}\n"
     embed.description = description
     return embed
 
 # Функция для создания embed
-def popularity_games_create_embed(game, days, granularity):
+def popularity_games_create_embed(game, days, granularity, guild):
     embed = discord.Embed(title=f"{game} Activity", color=discord.Color.blue())
-    description = f"{game} popularity chart for the last {days} days with granularity: {granularity}\n\n"
+    description = (f"{game} {get_phrase('popularity chart for the last', guild)} {days} "
+                   f"{get_phrase('days with granularity', guild)}: {granularity}\n\n")
     embed.description = description
     return embed

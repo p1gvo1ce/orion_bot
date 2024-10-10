@@ -33,13 +33,12 @@ invitations = {}
 
 async def top_games_command(interaction: discord.Interaction, days: int, top: int, granularity: str):
     guild_id = interaction.guild_id
-    guild_name = interaction.guild.name
     top_games = get_top_games(guild_id, days, granularity)
     top_games = top_games[:top]
 
-    graph_buf = plot_top_games(guild_id, guild_name, top_games, days, granularity)
+    graph_buf = plot_top_games(interaction.guild, top_games, days, granularity)
 
-    embed = top_games_create_embed(top_games, days, granularity)
+    embed = top_games_create_embed(top_games, days, granularity, interaction.guild)
 
     file = discord.File(fp=graph_buf, filename="top_games.png")
     embed.set_image(url="attachment://top_games.png")
@@ -50,12 +49,10 @@ async def top_games_command(interaction: discord.Interaction, days: int, top: in
 @app_commands.describe(days="Number of days to analyze", granularity="Granularity (day, week, month)", game="Name of the game")
 
 async def game_popularity_chart(interaction: discord.Interaction, days: int, granularity: str, game: str):
-    guild_id = interaction.guild_id
-    guild_name = interaction.guild.name
 
-    graph_buf = plot_top_games(guild_id, guild_name, [], days, granularity, game)
+    graph_buf = plot_top_games(interaction.guild, [], days, granularity, game)
 
-    embed = popularity_games_create_embed(game, days, granularity)
+    embed = popularity_games_create_embed(game, days, granularity, interaction.guild)
 
     file = discord.File(fp=graph_buf, filename=f"{game}_popularity.png")
     embed.set_image(url=f"attachment://{game}_popularity.png")
