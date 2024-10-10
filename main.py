@@ -22,6 +22,8 @@ intents.guild_messages = True
 intents.dm_messages = False
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+# Словарь для хранения приглашений
+invitations = {}
 
 @bot.tree.command(name="top_games", description="Get top games for the last N days.")
 @app_commands.describe(days="Number of days to analyze", top="Number of top games", granularity="Granularity (day, week, month)")
@@ -44,11 +46,35 @@ async def top_games_command(interaction: discord.Interaction, days: int, top: in
 async def start():
     print(f'Logged in as {bot.user.name}')
     await bot.tree.sync()
+    for guild in bot.guilds:
+        invitations[guild.id] = await guild.invites()
     await periodic_check_for_guilds(bot)
 
+async def join_from_invite(member):
+    guild = member.guild
+    invites_before = invitations[guild.id]
+    invites_after = await guild.invites()
+
+    # Сравниваем приглашения, чтобы найти, по какому пригласили участника
+    for invite in invites_before:
+        for after in invites_after:
+            if invite.code == after.code:
+                # Если количество использований изменилось
+                if invite.uses < after.uses:
+                    inviter = invite.inviter
+                    invite_code = invite.code
+                    break
+    if inviter:
+        print(f'Member {member.name} joined via invitation {invite_code}, invited by {inviter.name}.')
+    else:
+        print(f'Member {member.name} joined without being invited by any other member.')
+
+    # Обновляем информацию о приглашениях
+    invitations[guild.id] = invites_after
 
 def add_listeners():
     bot.add_listener(start, 'on_ready')
+    bot.add_listener(join_from_invite, 'on_member_join')
 
 
 add_listeners()

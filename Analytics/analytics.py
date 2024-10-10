@@ -56,7 +56,7 @@ def plot_top_games(guild_id, guild_name, top_games, days, granularity):
 
     plt.xlabel(f'Time ({granularity})')
     plt.ylabel('Number of unique players')
-    plt.title(f'Top games activity on server {guild_name}')
+    plt.title(f'Top games activity on {guild_name}')
     plt.legend()
 
     # Ограничение количества меток на оси X
