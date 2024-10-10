@@ -50,6 +50,7 @@ def plot_top_games(guild_id, guild_name, top_games, days, granularity, game = No
     # Построение графика
     plt.figure(figsize=(10, 6))
     for game_name, periods in game_data.items():
+        print(game_name)
         if periods:  # Проверяем, есть ли данные
             dates = [datetime.strptime(p[0], date_format) for p in periods]
             counts = [p[1] for p in periods]
@@ -65,7 +66,10 @@ def plot_top_games(guild_id, guild_name, top_games, days, granularity, game = No
     plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))  # Форматирование дат
 
     # Ограничение максимального количества меток на оси X
-    plt.gca().xaxis.set_major_locator(MaxNLocator(nbins=8))  # Максимум 8 меток
+    if days > 8:
+        plt.gca().xaxis.set_major_locator(MaxNLocator(nbins=8))  # Максимум 8 меток
+    else:
+        plt.gca().xaxis.set_major_locator(MaxNLocator(nbins=days))
 
     # Установка границ графика
     plt.xlim([start_date, end_date])

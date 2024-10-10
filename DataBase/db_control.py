@@ -132,6 +132,19 @@ def write_to_guild_settings_db(guild_id, param_name, param_value):
     conn.commit()
     conn.close()
 
+# Удаление данных из таблицы сервера
+def delete_from_guild_settings_db(guild_id: int, param_name: str) -> None:
+    db_path = os.path.join("DataBase", "main.db")
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    table_name = f"guild_{guild_id}"
+
+    # Удаляем параметр
+    cursor.execute(f"DELETE FROM {table_name} WHERE param_name = ?", (param_name,))
+
+    conn.commit()
+    conn.close()
+
 
 # Чтение данных из таблицы сервера
 def read_from_guild_settings_db(guild_id, param_name):

@@ -7,10 +7,11 @@ import asyncio
 import os
 
 from DataBase.db_control import (check_and_initialize_main_db, get_token_from_db, request_token, get_top_games,
-                                 write_to_guild_settings_db)
+                                 write_to_guild_settings_db, delete_from_guild_settings_db)
 from ActivityControl.activity_monitoring import periodic_check_for_guilds
 from Analytics.analytics import plot_top_games, top_games_create_embed, popularity_games_create_embed
 from utils import send_bot
+from phrases import get_phrase
 
 logging.basicConfig(level=logging.INFO)  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 logger = logging.getLogger('discord')
@@ -82,9 +83,9 @@ async def join_from_invite(member):
                     invite_code = invite.code
                     break
     if inviter:
-        print(f'Member {member.name} joined via invitation {invite_code}, invited by {inviter.name}.')
+        print(f'{member.name} joined via invitation {invite_code}, invited by {inviter.name}.')
     else:
-        print(f'Member {member.name} joined without being invited by any other member.')
+        print(f'{member.name} joined without being invited by any other member.')
 
     # Обновляем информацию о приглашениях
     invitations[guild.id] = invites_after
@@ -112,9 +113,26 @@ async def create_party_search_channel(interaction: discord.Interaction):
     write_to_guild_settings_db(guild_id, "party_find_voice_channel_id", f"id{voice_channel_id}")
 
     # Отправляем сообщение о создании каналов
-    await interaction.response.send_message(f"Text and voice channels for party search created:\n"
-                                            f"Text Channel: {text_channel.mention}\n"
-                                            f"Voice Channel: {voice_channel.mention}")
+    await interaction.response.send_message(f"{get_phrase('channels for party search created', guild)}:\n"
+                                            f"{get_phrase('Text Channel', guild)}: {text_channel.mention}\n"
+                                            f"{get_phrase('Voice Channel', guild)}: {voice_channel.mention}")
+
+
+# Смена языка сообщений бота
+@bot.tree.command(name="language", description="[admin] change the language of bot messages.")
+@app_commands.describe(lang="langeuage (ru, en)")
+@commands.has_permissions(administrator=True)
+async def game_popularity_chart(interaction: discord.Interaction, lang: str):
+    langs = ['ru', 'en']
+    if lang not in langs:
+        await interaction.response.send_message(f"you need to specify the language **ru** or **en**\n"
+                                                "нужно указать язык **ru** или **en**",
+                                                ephemeral=True)
+    else:
+        delete_from_guild_settings_db(interaction.guild.id, 'language')
+        write_to_guild_settings_db(interaction.guild.id, "language", lang)
+
+        await interaction.response.send_message(get_phrase('language_changed', interaction.guild), ephemeral=True)
 
 
 from ChannelControl.voice_channels_control import find_party_controller
@@ -141,7 +159,6 @@ async def run_bot(token, conn):
         except Exception as e:
             print(f"Бот остановлен из-за ошибки: {e}")
             if str(e) == "Improper token has been passed.":
-                print(1)
                 token = request_token(conn)
             else:
                 os.system("python bot.py")

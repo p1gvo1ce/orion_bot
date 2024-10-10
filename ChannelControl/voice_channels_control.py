@@ -2,9 +2,11 @@ import os
 import json
 import discord
 import random
+import asyncio
 from DataBase.db_control import read_from_guild_settings_db
 from ChannelControl.text_channels_control import add_game_in_game_roles_channel
 from utils import clean_channel_id
+from phrases import get_phrase
 
 temp_channels_path = os.path.join("ChannelControl", "temp_channels.json")
 
@@ -22,9 +24,31 @@ def save_temp_channels(temp_channels):
         json.dump(temp_channels, f, indent=4)
 
 
-# Функция контроля поиска пати
+class JoinButton(discord.ui.View):
+    def __init__(self, invite, guild):
+        super().__init__(timeout=None)
+        self.invite = invite
+        self.guild = guild
+
+        # Создаем кнопку динамически
+        join_button = discord.ui.Button(
+            label=get_phrase("Join Voice Channel", self.guild),
+            style=discord.ButtonStyle.success
+        )
+        join_button.callback = self.join_button_callback  # Привязываем обработчик событий
+        self.add_item(join_button)  # Добавляем кнопку в View
+
+    async def join_button_callback(self, interaction: discord.Interaction):
+        # Обрабатываем нажатие кнопки
+        await interaction.response.send_message(
+            f"{get_phrase('Click here to join', self.guild)}: {self.invite.url}",
+            ephemeral=True
+        )
+
+
 async def find_party_controller(member, before, after):
     guild_id = member.guild.id
+    guild = member.guild
 
     # Проверяем, подключился ли участник к новому каналу
     if after.channel and after.channel != before.channel:
@@ -33,26 +57,21 @@ async def find_party_controller(member, before, after):
         # Чтение данных о поисковых каналах из базы данных
         search_voice_channel_ids = read_from_guild_settings_db(guild_id, "party_find_voice_channel_id")
         search_voice_channel_ids = [clean_channel_id(id_str) for id_str in search_voice_channel_ids]
-        # Проверяем, является ли текущий канал одним из поисковых
+
         if voice_channel_id in search_voice_channel_ids:
 
             if member.activity and member.activity.type == discord.ActivityType.playing:
                 channel_name = member.activity.name
-
-                # Проверка и управление ролью активности
-                role_name = channel_name  # Имя роли будет таким же, как имя канала
+                role_name = channel_name
                 role = discord.utils.get(after.channel.guild.roles, name=role_name)
 
                 if role is None:
-                    # Если роли нет, создаем её с случайным цветом
-                    random_color = random.randint(0, 0xFFFFFF)  # Генерируем случайный цвет
+                    random_color = random.randint(0, 0xFFFFFF)
                     role = await after.channel.guild.create_role(name=role_name, color=discord.Color(random_color))
-
                     await add_game_in_game_roles_channel(role, after.channel.guild)
 
-                # Проверяем, есть ли у участника роль
                 if role not in member.roles:
-                    await member.add_roles(role)  # Добавляем роль участнику
+                    await member.add_roles(role)
 
             else:
                 channel_name = member.nick if member.nick else member.name
@@ -64,48 +83,57 @@ async def find_party_controller(member, before, after):
 
             temp_channel = await after.channel.guild.create_voice_channel(
                 channel_name,
-                bitrate=max_bitrate  # Устанавливаем максимальный битрейт
+                bitrate=max_bitrate
             )
 
-            # Права для создателя канала (чтобы мог управлять каналом)
             overwrite = discord.PermissionOverwrite()
             overwrite.update(
-                manage_channels=True,  # Управление каналом (изменение названия и настроек)
-                mute_members=True,  # Мут участников
-                move_members=True,  # Перемещение участников
-                manage_permissions=True  # Управление правами доступа
+                manage_channels=True,
+                mute_members=True,
+                move_members=True,
+                manage_permissions=True
             )
-
-            # Устанавливаем права для участника, который создал канал
             await temp_channel.set_permissions(member, overwrite=overwrite)
-
-            # Перемещаем участника в временный канал
             await member.move_to(temp_channel)
 
-            # Добавляем временный канал в JSON
             temp_channels = load_temp_channels()
             temp_channels[str(temp_channel.id)] = {"guild_id": guild_id}
             save_temp_channels(temp_channels)
 
-            # Чтение текстовых поисковых каналов из базы данных
             search_text_channel_ids = read_from_guild_settings_db(guild_id, "party_find_text_channel_id")
             search_text_channel_ids = [clean_channel_id(id_str) for id_str in search_text_channel_ids]
 
-            # Ищем первый существующий текстовый канал и отправляем туда сообщение
+            invite = await temp_channel.create_invite(max_age=3600, max_uses=99)  # Создаем приглашение
+
             for text_channel_id in search_text_channel_ids:
                 text_channel = member.guild.get_channel(text_channel_id)
-                if text_channel:  # Проверяем, существует ли канал
-                    await text_channel.send(
-                        f"{member.mention} был перемещен в {temp_channel.mention} для поиска группы.")
-                    break  # Найдя существующий канал, прерываем цикл
+                if text_channel:
+                    find_message = await text_channel.send(
+                        content=f"{member.mention} {get_phrase('looking for a company', guild)} "
+                                f"{temp_channel.mention}.\n"
+                                f"<@&{role.id}>",
+                        view=JoinButton(invite, guild)
+                    )
+                    break
 
-        # Проверка, отключился ли участник из временного канала
+            asyncio.create_task(check_member_in_channel(member, temp_channel, find_message, invite))
+
     if before.channel and before.channel != after.channel:
         temp_channels = load_temp_channels()
-
-        # Если канал был временным и больше никого не осталось, удаляем канал
         if str(before.channel.id) in temp_channels:
             if len(before.channel.members) == 0:
                 await before.channel.delete()
                 del temp_channels[str(before.channel.id)]
                 save_temp_channels(temp_channels)
+
+# Проверка наличия участника в голосовом (актуальность поиска)
+async def check_member_in_channel(member, temp_channel, find_message, invite):
+    while True:
+        await asyncio.sleep(60)
+
+        if member not in temp_channel.members:
+            try:
+                await find_message.delete()
+            except discord.NotFound:
+                pass
+            break

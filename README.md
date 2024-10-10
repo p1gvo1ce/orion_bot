@@ -7,11 +7,12 @@ Implemented functionality:
 - Analysis of the popularity of a specific game among server users (/game_popularity_chart)
 - Automated creation of automatic search channels for playing in the Discord voice channel
 - Automatic creation of roles for the games you are looking for and posting them in the channel for searching
+- adding a choice of language for messages from the bot (Russian/English)
+- design of notifications for company search
 
 In development:
-- design of notifications for company search
 - display in the search notification of server participants with the same activity within the last 10 minutes
-- adding a choice of language for messages from the bot (Russian/English)
+
 
 
 ------------
@@ -24,8 +25,9 @@ In development:
 - Анализ популярности конкретной игры среди пользователей сервера (/game_popularity_chart)
 - Автоматизированное создание автоматических поисковых каналов для игры в голосовом канале Дискорд 
 - Автоматическое создание ролей для искомых игр и размещение в канале для поиска
+- добавление выбора языка сообщений от бота (русский/английский)
+- оформление уведомлений для поиска компании
 
 В разработке:
-- оформление уведомлений для поиска компании
 - отображение в поисковом уведомлении участников сервера с той же активностью в пределах последних 10 минут
-- добавление выбора языка сообщений от бота (русский/английский)
+
