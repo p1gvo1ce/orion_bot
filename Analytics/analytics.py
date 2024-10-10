@@ -1,18 +1,19 @@
 import discord
 import sqlite3
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.ticker import MaxNLocator
 import io
 import os
 from datetime import datetime, timedelta, timezone
 
 # Подготовка данных о топ играх и построение графика
-def plot_top_games(guild_id, top_games, days, granularity):
+def plot_top_games(guild_id, guild_name, top_games, days, granularity):
     conn = sqlite3.connect(os.path.join("DataBase", "game_activities.db"))
     c = conn.cursor()
     table_name = f"guild_{guild_id}"
     end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=days)
-
     start_date_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
     end_date_str = end_date.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -23,7 +24,7 @@ def plot_top_games(guild_id, top_games, days, granularity):
     elif granularity == 'week':
         date_format = '%Y-%W'
         interval = '7 days'
-    else:
+    else:  # granularity == 'month'
         date_format = '%Y-%m'
         interval = '1 month'
 
@@ -32,7 +33,7 @@ def plot_top_games(guild_id, top_games, days, granularity):
     for game in top_games:
         game_name = game[0]
         query = f"""
-            SELECT strftime('{date_format}', datetime) as period, COUNT(DISTINCT member_id)
+            SELECT strftime('{date_format}', datetime) as period, COUNT(DISTINCT member_id) as unique_players
             FROM {table_name}
             WHERE activity_name = ? AND datetime BETWEEN ? AND ?
             GROUP BY period
@@ -42,23 +43,31 @@ def plot_top_games(guild_id, top_games, days, granularity):
         periods = c.fetchall()
 
         game_data[game_name] = periods
-
     conn.close()
 
     # Построение графика
     plt.figure(figsize=(10, 6))
     for game_name, periods in game_data.items():
-        dates = [datetime.strptime(p[0], date_format) for p in periods]
-        counts = [p[1] for p in periods]
-        plt.plot(dates, counts, label=game_name)
+        if periods:  # Проверяем, есть ли данные
+            print(periods)
+            dates = [datetime.strptime(p[0], date_format) for p in periods]
+            counts = [p[1] for p in periods]
+            plt.plot(dates, counts, label=game_name)
 
     plt.xlabel(f'Time ({granularity})')
     plt.ylabel('Number of unique players')
-    plt.title(f'Top games activity on server {guild_id}')
+    plt.title(f'Top games activity on server {guild_name}')
     plt.legend()
 
+    # Ограничение количества меток на оси X
+    plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())  # Автоматический выбор интервалов
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))  # Форматирование дат
+
+    # Ограничение максимального количества меток на оси X
+    plt.gca().xaxis.set_major_locator(MaxNLocator(nbins=8))  # Максимум 8 меток
+
     # Установка границ графика
-    plt.xlim([start_date, end_date])  # Задаем границы по оси X
+    plt.xlim([start_date, end_date])
 
     # Сохраняем график в байтовый буфер
     buf = io.BytesIO()

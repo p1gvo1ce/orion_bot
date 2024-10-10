@@ -28,10 +28,11 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 async def top_games_command(interaction: discord.Interaction, days: int, top: int, granularity: str):
     guild_id = interaction.guild_id
+    guild_name = interaction.guild.name
     top_games = get_top_games(guild_id, days, granularity)
     top_games = top_games[:top]
 
-    graph_buf = plot_top_games(guild_id, top_games, days, granularity)
+    graph_buf = plot_top_games(guild_id, guild_name, top_games, days, granularity)
 
     embed = top_games_create_embed(top_games, days, granularity)
 
