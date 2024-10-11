@@ -61,35 +61,6 @@ async def game_popularity_chart(interaction: discord.Interaction, days: int, gra
     await interaction.response.send_message(embed=embed, file=file)
 
 
-async def restore_persistent_views(bot, conn):
-    saved_views = get_saved_views(conn)
-
-    for message_id, channel_id, guild_id, button_name, invite_url, param_value in saved_views:
-        channel = bot.get_channel(channel_id)  # Получаем канал по ID
-        if channel:
-            try:
-                message = await channel.fetch_message(message_id)  # Получаем сообщение по ID
-
-                # Восстанавливаем View в зависимости от имени кнопки
-                if button_name == 'join_button':
-                    invite = await bot.fetch_invite(invite_url)  # Получаем объект приглашения
-                    guild = bot.get_guild(guild_id)  # Получаем объект сервера (гильдии)
-
-                    # Восстанавливаем View для "JoinButton"
-                    view = JoinButton(invite=invite, guild=guild)
-                elif button_name == 'who_plays_button':
-                    # Восстанавливаем View для "WhoPlaysButton" или любой другой кнопки
-                    view = WhoPlaysButton(param_value=param_value)
-                elif button_name == 'add_info_button':
-                    # Восстанавливаем View для кнопки "Добавить информацию"
-                    view = AddInfoButton(param_value=param_value)
-
-                # Регистрируем View
-                bot.add_view(view, message_id=message_id)
-            except discord.NotFound:
-                print(f"Message with ID {message_id} not found.")
-
-
 async def start():
     print(f'Logged in as {bot.user.name}')
     await bot.tree.sync()
