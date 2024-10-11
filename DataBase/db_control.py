@@ -68,6 +68,23 @@ def insert_activity(conn, guild_id, member_id, activity_name):
 def close_connection(conn):
     conn.close()
 
+# Получение ids по активности за последние 10 минут
+def get_recent_activity_members(guild_id, activity_name, minutes=10):
+    conn = sqlite3.connect(os.path.join("DataBase", "game_activities.db"))
+    c = conn.cursor()
+    table_name = f"guild_{guild_id}"
+    time_threshold = (datetime.now() - timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M:%S")
+
+    c.execute(f"""
+        SELECT DISTINCT member_id 
+        FROM {table_name}
+        WHERE activity_name = ? AND datetime >= ?
+    """, (activity_name, time_threshold))
+
+    results = c.fetchall()
+    return [row[0].replace("id_", "") for row in results]  # Убираем префикс "id_"
+
+
 # Функция для получения данных из базы данных
 def get_top_games(guild_id, days, granularity):
     conn = sqlite3.connect(os.path.join("DataBase", "game_activities.db"))
@@ -159,3 +176,4 @@ def read_from_guild_settings_db(guild_id, param_name):
     conn.close()
 
     return [result[0] for result in results] if results else []
+

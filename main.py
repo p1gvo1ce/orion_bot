@@ -27,6 +27,8 @@ send_bot(bot)
 # Словарь для хранения приглашений
 invitations = {}
 
+# Команды
+
 # Получение анализа самых популярных игр на сервере
 @bot.tree.command(name="top_games", description="Get top games for the last N days.")
 @app_commands.describe(days="Number of days to analyze", top="Number of top games", granularity="Granularity (day, week, month)")
@@ -57,6 +59,36 @@ async def game_popularity_chart(interaction: discord.Interaction, days: int, gra
     file = discord.File(fp=graph_buf, filename=f"{game}_popularity.png")
     embed.set_image(url=f"attachment://{game}_popularity.png")
     await interaction.response.send_message(embed=embed, file=file)
+
+
+async def restore_persistent_views(bot, conn):
+    saved_views = get_saved_views(conn)
+
+    for message_id, channel_id, guild_id, button_name, invite_url, param_value in saved_views:
+        channel = bot.get_channel(channel_id)  # Получаем канал по ID
+        if channel:
+            try:
+                message = await channel.fetch_message(message_id)  # Получаем сообщение по ID
+
+                # Восстанавливаем View в зависимости от имени кнопки
+                if button_name == 'join_button':
+                    invite = await bot.fetch_invite(invite_url)  # Получаем объект приглашения
+                    guild = bot.get_guild(guild_id)  # Получаем объект сервера (гильдии)
+
+                    # Восстанавливаем View для "JoinButton"
+                    view = JoinButton(invite=invite, guild=guild)
+                elif button_name == 'who_plays_button':
+                    # Восстанавливаем View для "WhoPlaysButton" или любой другой кнопки
+                    view = WhoPlaysButton(param_value=param_value)
+                elif button_name == 'add_info_button':
+                    # Восстанавливаем View для кнопки "Добавить информацию"
+                    view = AddInfoButton(param_value=param_value)
+
+                # Регистрируем View
+                bot.add_view(view, message_id=message_id)
+            except discord.NotFound:
+                print(f"Message with ID {message_id} not found.")
+
 
 async def start():
     print(f'Logged in as {bot.user.name}')
@@ -131,6 +163,7 @@ async def game_popularity_chart(interaction: discord.Interaction, lang: str):
 
         await interaction.response.send_message(get_phrase('language_changed', interaction.guild), ephemeral=True)
 
+# Импорт функций и добавление к прослушиванию событий
 
 from ChannelControl.voice_channels_control import find_party_controller
 from MemberControl.role_control import game_role_reaction_add, game_role_reaction_remove

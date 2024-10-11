@@ -9,9 +9,10 @@ Implemented functionality:
 - Automatic creation of roles for the games you are looking for and posting them in the channel for searching
 - adding a choice of language for messages from the bot (Russian/English)
 - design of notifications for company search
-
-In development:
 - display in the search notification of server participants with the same activity within the last 10 minutes
+- 
+In development:
+- Create party search from private channel with no activity
 
 
 
@@ -27,7 +28,8 @@ In development:
 - Автоматическое создание ролей для искомых игр и размещение в канале для поиска
 - добавление выбора языка сообщений от бота (русский/английский)
 - оформление уведомлений для поиска компании
+- отображение в поисковом уведомлении участников сервера с той же активностью в пределах последних 10 минут
 
 В разработке:
-- отображение в поисковом уведомлении участников сервера с той же активностью в пределах последних 10 минут
+- Создание поиска пати из приватного канала без активности
 

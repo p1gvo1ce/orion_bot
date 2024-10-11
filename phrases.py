@@ -68,6 +68,54 @@ bot_phrases = {
     'Activity': {
         'ru': 'Активность',
         'en': 'Activity'
+    },
+    'Add Info': {
+        'ru': 'Добавить инфо',
+        'en': 'Add Info'
+    },
+    'Additional Information': {
+        'ru': 'Дополнительная информация',
+        'en': 'Additional Information'
+    },
+    'Enter any additional details here...': {
+        'ru': 'Введи дополнительные детали тут...',
+        'en': 'Enter any additional details here...'
+    },
+    'Information successfully added.': {
+        'ru': 'Дополнительная информация добавлена',
+        'en': 'Information successfully added.'
+    },
+    'Who is playing?': {
+        'ru': 'Кто в игре?',
+        'en': 'Who is playing?'
+    },
+    'Close': {
+        'ru': 'Закрыть',
+        'en': 'Close'
+    },
+    'Currently in game': {
+        'ru': 'Сейчас в игре',
+        'en': 'Currently in game'
+    },
+    'Only the channel creator can add info.': {
+        'ru': 'Добавлять информацию может только создатель поиска',
+        'en': 'Only the channel creator can add info.'
+    },
+    'Only the channel creator can close the search.': {
+        'ru': 'Только инициатор поиска может его закрыть.',
+        'en': 'Only the channel creator can close the search.'
+    },
+    'Search message closed.': {
+        'ru': 'Поиск закрыт.',
+        'en': 'Search message closed.'
+    },
+    'No one else is currently playing this game.': {
+        'ru': 'В эту игру больше никто не играет.',
+        'en': 'No one else is currently playing this game.'
+    },
+    'Currently playing': {
+        'ru': 'Сейчас в игре',
+        'en': 'Currently playing'
     }
 }
 
