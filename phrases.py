@@ -116,6 +116,14 @@ bot_phrases = {
     'Currently playing': {
         'ru': 'Сейчас в игре',
         'en': 'Currently playing'
+    },
+    'Data based on': {
+        'ru': 'Основано на данных',
+        'en': 'Data based on'
+    },
+    'unique players over all time': {
+        'ru': 'уникальных игроков за период',
+        'en': 'unique players over all time'
     }
 }
 

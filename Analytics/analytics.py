@@ -86,19 +86,60 @@ def plot_top_games(guild, top_games, days, granularity, game = None):
 
 # Функция для создания embed
 def top_games_create_embed(top_games, days, granularity, guild):
+    conn = sqlite3.connect(os.path.join("DataBase", "game_activities.db"))
+    c = conn.cursor()
+
+    guild_id = guild.id
+    table_name = f"guild_{guild_id}"
+
+    # Запрос на получение общего количества уникальных пользователей за всё время
+    query_total_unique_players = f"""
+        SELECT COUNT(DISTINCT member_id) 
+        FROM {table_name}
+    """
+    c.execute(query_total_unique_players)
+    total_unique_players = c.fetchone()[0]
+    conn.close()
+
+    # Создание embed с основной информацией
     embed = discord.Embed(title=f"{get_phrase('Top', guild)} {len(top_games)} "
                                 f"{get_phrase('Games Activity', guild)}", color=discord.Color.blue())
     description = (f"{get_phrase('Data for the last', guild)} {days} "
                    f"{get_phrase('days with granularity', guild)}: {granularity}\n\n")
     for i, game in enumerate(top_games):
-        description += f"**{i+1}. {game[0]}** - {game[1]} {get_phrase('unique players', guild)}\n"
+        description += f"**{i + 1}. {game[0]}** - {game[1]} {get_phrase('unique players', guild)}\n"
     embed.description = description
+
+    # Добавление информации в подвал
+    embed.set_footer(text=f"{get_phrase('Data based on', guild)} {total_unique_players} "
+                          f"{get_phrase('unique players over all time', guild)}")
+
     return embed
 
-# Функция для создания embed
 def popularity_games_create_embed(game, days, granularity, guild):
+    conn = sqlite3.connect(os.path.join("DataBase", "game_activities.db"))
+    c = conn.cursor()
+
+    guild_id = guild.id
+    table_name = f"guild_{guild_id}"
+
+    # Запрос на получение общего количества уникальных пользователей за всё время
+    query_total_unique_players = f"""
+        SELECT COUNT(DISTINCT member_id) 
+        FROM {table_name}
+    """
+    c.execute(query_total_unique_players)
+    total_unique_players = c.fetchone()[0]
+    conn.close()
+
+    # Создание embed с основной информацией
     embed = discord.Embed(title=f"{game} Activity", color=discord.Color.blue())
     description = (f"{game} {get_phrase('popularity chart for the last', guild)} {days} "
                    f"{get_phrase('days with granularity', guild)}: {granularity}\n\n")
     embed.description = description
+
+    # Добавление информации в подвал
+    embed.set_footer(text=f"{get_phrase('Data based on', guild)} {total_unique_players} "
+                          f"{get_phrase('unique players over all time', guild)}")
+
     return embed
