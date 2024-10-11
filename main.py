@@ -5,13 +5,8 @@ import logging
 import tracemalloc
 import asyncio
 import os
-
-from DataBase.db_control import (check_and_initialize_main_db, get_token_from_db, request_token, get_top_games,
-                                 write_to_guild_settings_db, delete_from_guild_settings_db)
-from ActivityControl.activity_monitoring import periodic_check_for_guilds
-from Analytics.analytics import plot_top_games, top_games_create_embed, popularity_games_create_embed
 from utils import send_bot
-from phrases import get_phrase
+
 
 logging.basicConfig(level=logging.INFO)  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 logger = logging.getLogger('discord')
@@ -24,6 +19,16 @@ intents.guild_messages = True
 intents.dm_messages = False
 bot = commands.Bot(command_prefix='!', intents=intents)
 send_bot(bot)
+send_bot(bot)
+
+from DataBase.db_control import (check_and_initialize_main_db, get_token_from_db, request_token, get_top_games,
+                                 write_to_guild_settings_db, delete_from_guild_settings_db)
+from ActivityControl.activity_monitoring import periodic_check_for_guilds
+from Analytics.analytics import plot_top_games, top_games_create_embed, popularity_games_create_embed
+from phrases import get_phrase
+from ChannelControl.buttons import update_buttons_on_start
+
+
 # Словарь для хранения приглашений
 invitations = {}
 
@@ -64,6 +69,9 @@ async def game_popularity_chart(interaction: discord.Interaction, days: int, gra
 async def start():
     print(f'Logged in as {bot.user.name}')
     await bot.tree.sync()
+
+    await update_buttons_on_start()
+
     for guild in bot.guilds:
         invitations[guild.id] = await guild.invites()
     await periodic_check_for_guilds(bot)

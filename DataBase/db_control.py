@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import json
 from datetime import datetime, timedelta, timezone
 
 def check_and_initialize_main_db():
@@ -9,7 +10,6 @@ def check_and_initialize_main_db():
         c = conn.cursor()
         c.execute('''CREATE TABLE tokens (id INTEGER PRIMARY KEY, token TEXT)''')
         conn.commit()
-        print("Создана база данных 'main.db' и таблица 'tokens'.")
     else:
         conn = sqlite3.connect(db_path)
     return conn
@@ -33,10 +33,10 @@ def update_token_in_db(conn, token):
 
 def request_token(conn):
     while True:
-        token = input("Введите токен для подключения: ").strip()
+        token = input("Введите токен / Enter token: ").strip()
         if token:
             update_token_in_db(conn, token)
-            print("Токен сохранен.")
+            print("Токен сохранен.\nToken saved")
             return token
 
 
@@ -45,7 +45,6 @@ def check_and_initialize_activities_db():
     if not os.path.exists(db_path):
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
-        print("Создана база данных 'game_activities.db'.")
     else:
         conn = sqlite3.connect(db_path)
 
@@ -82,6 +81,7 @@ def get_recent_activity_members(guild_id, activity_name, minutes=10):
     """, (activity_name, time_threshold))
 
     results = c.fetchall()
+    conn.close()
     return [row[0].replace("id_", "") for row in results]  # Убираем префикс "id_"
 
 
@@ -177,3 +177,91 @@ def read_from_guild_settings_db(guild_id, param_name):
 
     return [result[0] for result in results] if results else []
 
+def create_buttons_table():
+    db_path = os.path.join("DataBase", "main.db")
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS buttons (
+            server_id INTEGER,
+            message_id INTEGER PRIMARY KEY,
+            button_type TEXT,
+            data TEXT,
+            member_id INTEGER
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+def write_to_buttons_db(server_id, message_id, button_type, data, member_id):
+    db_path = os.path.join("DataBase", "main.db")
+    create_buttons_table()  # Убедимся, что таблица создана
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO buttons (server_id, message_id, button_type, data, member_id)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(message_id) DO UPDATE SET button_type = excluded.button_type, data = excluded.data, member_id = excluded.member_id
+    """, (server_id, message_id, button_type, json.dumps(data), member_id))
+
+    conn.commit()
+    conn.close()
+
+def read_button_data_from_db(message_id):
+    db_path = os.path.join("DataBase", "main.db")
+    create_buttons_table()
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT server_id, button_type, data, member_id FROM buttons WHERE message_id = ?", (message_id,))
+    result = cursor.fetchone()
+
+    conn.close()
+
+    if result:
+        server_id, button_type, data_json, member_id = result
+        data = json.loads(data_json)
+        return {
+            "server_id": server_id,
+            "button_type": button_type,
+            "data": data,
+            "member_id": member_id
+        }
+    return None
+
+def delete_button_data_from_db(message_id):
+    db_path = os.path.join("DataBase", "main.db")
+    create_buttons_table()
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM buttons WHERE message_id = ?", (message_id,))
+    conn.commit()
+    conn.close()
+
+def read_all_buttons_data():
+    db_path = os.path.join("DataBase", "main.db")
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT message_id, server_id, button_type, data, member_id FROM buttons")
+    results = cursor.fetchall()
+
+    conn.close()
+
+    return [
+        {
+            "message_id": row[0],
+            "server_id": row[1],
+            "button_type": row[2],
+            "data": json.loads(row[3]),
+            "member_id": row[4]
+        }
+        for row in results
+    ]

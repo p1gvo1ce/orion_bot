@@ -137,6 +137,10 @@ def get_guild_language(guild_id: int) -> str:
 
 
 def get_phrase(phrase_key: str, guild: str) -> str:
-    language = get_guild_language(guild.id)
+    try:
+        guild_id = guild.id
+    except:
+        guild_id = guild
+    language = get_guild_language(guild_id)
 
     return bot_phrases.get(phrase_key, {}).get(language, "text 404")
