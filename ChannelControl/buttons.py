@@ -39,7 +39,9 @@ async def update_buttons_on_start():
                 voice_channel_id = extract_id(message.content)
                 find_voices_ids.append(voice_channel_id)
                 if member and member.voice:
-                    if member.voice.id != voice_channel_id:
+                    if str(member.voice.channel.id) != voice_channel_id:
+                        print(member.voice.channel.id)
+                        print(voice_channel_id)
                         await message.delete()
                     else:
                         await message.edit(view=None)  # Удаляем старые кнопки
@@ -47,7 +49,7 @@ async def update_buttons_on_start():
                         if button_data["button_type"] == "JoinButton":
                             invite = button_data["data"].get("invite")
                             await message.edit(view=JoinButton(invite, guild_id, member.activity.name, member.id))
-                else:
+                if not member.voice:
                     await message.delete()
 
             else:

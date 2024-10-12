@@ -113,7 +113,7 @@ async def find_party_controller(member, before, after):
 # Проверка наличия участника в голосовом (актуальность поиска)
 async def check_member_in_channel(member, temp_channel, find_message, invite):
     while True:
-        await asyncio.sleep(60)
+        await asyncio.sleep(30)
 
         if member not in temp_channel.members:
             try:
