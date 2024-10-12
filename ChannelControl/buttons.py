@@ -1,4 +1,5 @@
 import discord
+import re
 from phrases import get_phrase
 from DataBase.db_control import (get_recent_activity_members, read_button_data_from_db, read_from_guild_settings_db,
                                  delete_button_data_from_db, read_all_buttons_data)
@@ -9,7 +10,7 @@ bot = get_bot()
 async def update_buttons_on_start():
     # Читаем все записи из базы данных
     buttons_data = read_all_buttons_data()
-
+    find_voices_ids = []
     for button_data in buttons_data:
         guild_id = button_data["server_id"]
         guild = bot.get_guild(guild_id)
@@ -35,16 +36,35 @@ async def update_buttons_on_start():
             if message:
                 # Сообщение найдено, теперь обновляем кнопки
                 member = guild.get_member(button_data["member_id"])
-                if member:
-                    await message.edit(view=None)  # Удаляем старые кнопки
+                voice_channel_id = extract_id(message.content)
+                find_voices_ids.append(voice_channel_id)
+                if member and member.voice:
+                    if member.voice.id != voice_channel_id:
+                        await message.delete()
+                    else:
+                        await message.edit(view=None)  # Удаляем старые кнопки
 
-                    if button_data["button_type"] == "JoinButton":
-                        invite = button_data["data"].get("invite")
-                        await message.edit(view=JoinButton(invite, guild_id, member.activity.name, member.id))
+                        if button_data["button_type"] == "JoinButton":
+                            invite = button_data["data"].get("invite")
+                            await message.edit(view=JoinButton(invite, guild_id, member.activity.name, member.id))
+                else:
+                    await message.delete()
+
             else:
                 # Если сообщение не найдено, удаляем запись из базы данных
                 delete_button_data_from_db(button_data["message_id"])
 
+    for voice in guild.voice_channels:
+        if str(voice.id) in find_voices_ids and len(voice.members) == 0:
+            await voice.delete()
+
+
+def extract_id(message):
+    pattern = r"<#(\d+)>"
+    match = re.search(pattern, message)
+    if match:
+        return match.group(1)
+    return None
 
 class AddInfoModal(discord.ui.Modal):
     def __init__(self, original_message, guild_id):
