@@ -22,56 +22,13 @@ send_bot(bot)
 send_bot(bot)
 
 from DataBase.db_control import (check_and_initialize_main_db, get_token_from_db, request_token)
-from ActivityControl.activity_monitoring import periodic_check_for_guilds
+
 from ChannelControl.buttons import update_buttons_on_start
 from commands import create_party_search_channel, game_popularity_chart, top_games_command, language
-
-
-# Словарь для хранения приглашений
-invitations = {}
-
-# Команды
-
-
-
-
-async def start():
-    print(f'Logged in as {bot.user.name}')
-    await bot.tree.sync()
-
-    await update_buttons_on_start()
-
-    for guild in bot.guilds:
-        invitations[guild.id] = await guild.invites()
-    await periodic_check_for_guilds(bot)
-
-async def join_from_invite(member):
-    guild = member.guild
-    invites_before = invitations[guild.id]
-    invites_after = await guild.invites()
-
-    # Сравниваем приглашения, чтобы найти, по какому пригласили участника
-    for invite in invites_before:
-        for after in invites_after:
-            if invite.code == after.code:
-                # Если количество использований изменилось
-                if invite.uses < after.uses:
-                    inviter = invite.inviter
-                    invite_code = invite.code
-                    break
-    if inviter:
-        print(f'{member.name} joined via invitation {invite_code}, invited by {inviter.name}.')
-    else:
-        print(f'{member.name} joined without being invited by any other member.')
-
-    # Обновляем информацию о приглашениях
-    invitations[guild.id] = invites_after
-
-
-
-# Импорт функций и добавление к прослушиванию событий
 from ChannelControl.voice_channels_control import find_party_controller
 from MemberControl.role_control import game_role_reaction_add, game_role_reaction_remove
+from events import start, join_from_invite
+
 listeners = {
     'on_ready': 'start',
     'on_member_join': 'join_from_invite',
@@ -79,7 +36,6 @@ listeners = {
     'on_raw_reaction_add': 'game_role_reaction_add',
     'on_raw_reaction_remove': 'game_role_reaction_remove'
 }
-
 for event_type, handler in listeners.items():
     bot.add_listener(globals()[handler], event_type)
 
