@@ -27,8 +27,8 @@ jobs:
       with:
         context: .
         push: true
-        tags: Anoniv456/discord-bot:latest
+        tags: p1gvo1ce/discord-bot:latest
 
     - name: Deploy to server
       run: |
-        ssh user@your-server "docker pull Anoniv456/discord-bot:latest && docker-compose up -d"
+        ssh user@your-server "docker pull p1gvo1ce/discord-bot:latest && docker-compose up -d"
