@@ -24,7 +24,6 @@ send_bot(bot)
 from DataBase.db_control import (check_and_initialize_main_db, get_token_from_db, request_token)
 from ActivityControl.activity_monitoring import periodic_check_for_guilds
 from ChannelControl.buttons import update_buttons_on_start
-
 from commands import create_party_search_channel, game_popularity_chart, top_games_command, language
 
 
@@ -73,7 +72,6 @@ async def join_from_invite(member):
 # Импорт функций и добавление к прослушиванию событий
 from ChannelControl.voice_channels_control import find_party_controller
 from MemberControl.role_control import game_role_reaction_add, game_role_reaction_remove
-
 listeners = {
     'on_ready': 'start',
     'on_member_join': 'join_from_invite',
@@ -82,11 +80,8 @@ listeners = {
     'on_raw_reaction_remove': 'game_role_reaction_remove'
 }
 
-def add_listeners():
-    for event_type, handler in listeners.items():
-        bot.add_listener(globals()[handler], event_type)
-
-add_listeners()
+for event_type, handler in listeners.items():
+    bot.add_listener(globals()[handler], event_type)
 
 async def register_commands(bot):
     await bot.tree.sync()

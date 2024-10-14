@@ -1,0 +1,9 @@
+version: '3'
+services:
+  bot:
+    image: your-docker-hub-username/discord-bot:latest
+    build: .
+    restart: always
+    volumes:
+      - .:/app
+    command: python main.py
