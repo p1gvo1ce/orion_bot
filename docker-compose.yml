@@ -1,7 +1,7 @@
 version: '3'
 services:
   bot:
-    image: your-docker-hub-username/discord-bot:latest
+    image: p1gvo1ce/discord-bot:latest
     build: .
     restart: always
     volumes:
