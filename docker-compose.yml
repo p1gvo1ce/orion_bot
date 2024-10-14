@@ -1,7 +1,7 @@
 version: '3'
 services:
   bot:
-    image: p1gvo1ce/discord-bot:latest
+    image: p1gvo1ce/orion-bot:latest
     build: .
     restart: always
     volumes:
