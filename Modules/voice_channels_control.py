@@ -52,21 +52,25 @@ async def find_party_controller(member, before, after):
 
         if voice_channel_id in search_voice_channel_ids:
 
-            if member.activity and member.activity.type == discord.ActivityType.playing:
-                channel_name = member.activity.name
-                role_name = channel_name
-                role = discord.utils.get(after.channel.guild.roles, name=role_name)
+            for activity in member.activities:
+                # Проверяем тип активности
+                if activity.type == discord.ActivityType.playing:
+                    channel_name = activity.name
+                    role_name = channel_name
+                    role = discord.utils.get(after.channel.guild.roles, name=role_name)
 
-                if role is None:
-                    random_color = random.randint(0, 0xFFFFFF)
-                    role = await after.channel.guild.create_role(name=role_name, color=discord.Color(random_color))
-                    await add_game_in_game_roles_channel(role, after.channel.guild)
+                    # Если роль не существует, создаем ее
+                    if role is None:
+                        random_color = random.randint(0, 0xFFFFFF)
+                        role = await after.channel.guild.create_role(name=role_name, color=discord.Color(random_color))
+                        await add_game_in_game_roles_channel(role, after.channel.guild)
 
-                if role not in member.roles:
-                    await member.add_roles(role)
+                    # Добавляем роль, если она еще не назначена
+                    if role not in member.roles:
+                        await member.add_roles(role)
 
-            else:
-                channel_name = member.nick if member.nick else member.name
+                else:
+                    channel_name = member.nick if member.nick else member.name
 
             if len(channel_name) > 100:
                 channel_name = channel_name[:100]
@@ -92,28 +96,29 @@ async def find_party_controller(member, before, after):
             temp_channels = load_temp_channels()
             temp_channels[str(temp_channel.id)] = {"guild_id": guild_id}
             save_temp_channels(temp_channels)
-            if member.activity and member.activity.type == discord.ActivityType.playing:
-                search_text_channel_ids = read_from_guild_settings_db(guild_id, "party_find_text_channel_id")
-                search_text_channel_ids = [clean_channel_id(id_str) for id_str in search_text_channel_ids]
+            for activity in member.activities:
+                if activity.type == discord.ActivityType.playing:
+                    search_text_channel_ids = read_from_guild_settings_db(guild_id, "party_find_text_channel_id")
+                    search_text_channel_ids = [clean_channel_id(id_str) for id_str in search_text_channel_ids]
 
-                invite = await temp_channel.create_invite(max_age=3600, max_uses=99)  # Создаем приглашение
+                    invite = await temp_channel.create_invite(max_age=3600, max_uses=99)
 
-                for text_channel_id in search_text_channel_ids:
-                    text_channel = member.guild.get_channel(text_channel_id)
-                    if text_channel:
-                        find_message = await text_channel.send(
-                            content=f"{member.mention} {get_phrase('looking for a company', guild)} "
-                                    f"{temp_channel.mention}.\n"
-                                    f"## <@&{role.id}>"
-                        )
+                    for text_channel_id in search_text_channel_ids:
+                        text_channel = member.guild.get_channel(text_channel_id)
+                        if text_channel:
+                            find_message = await text_channel.send(
+                                content=f"{member.mention} {get_phrase('looking for a company', guild)} "
+                                        f"{temp_channel.mention}.\n"
+                                        f"## <@&{role.id}>"
+                            )
 
-                        invite_data = {"invite": invite.url}
-                        write_to_buttons_db(guild.id, find_message.id, "JoinButton", invite_data, member.id)
+                            invite_data = {"invite": invite.url}
+                            write_to_buttons_db(guild.id, find_message.id, "JoinButton", invite_data, member.id)
 
-                        await find_message.edit(view=JoinButton(invite.url, guild.id, member.activity.name, member.id))
-                        break
+                            await find_message.edit(view=JoinButton(invite.url, guild.id, activity.name, member.id))
+                            break
 
-                asyncio.create_task(check_member_in_channel(member, temp_channel, find_message, invite))
+                    asyncio.create_task(check_member_in_channel(member, temp_channel, find_message, invite))
 
     if before.channel and before.channel != after.channel:
         temp_channels = load_temp_channels()
