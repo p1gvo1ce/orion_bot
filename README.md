@@ -1,4 +1,4 @@
-The bot is developed based on personal needs. The code is available for use and editing.
+The bot is designed taking into account the needs of the [Safe Space](https://discord.gg/safe-space-702588231614595172) guild. The code is available for use and editing.
 
 You can contact Discord [p1gvo1ce](https://discordapp.com/users/469306021106417664) with questions and suggestions
 
@@ -13,6 +13,8 @@ Implemented functionality:
 - Create party search from private channel with no activity
 - Automatically adding game roles to server members from Discord activity (if such a role exists)
 - Automatically creating roles from top X activities in the guild
+- User can set their own name for temporary channels (global setting)
+- Ability for user to disable automatic updating of their game roles from Discord activity status
 
 In development:
 - Creating a system for logging events on the server (
@@ -34,7 +36,7 @@ In development:
 - Switching bot messages to embed where allowed
 
 ------------
-Бот разрабатывается исходя из личных потребностей. Код доступен для использования и редактирования.
+Бот разрабатывается исходя из потребностей сервера [Safe Space](https://discord.gg/safe-space-702588231614595172). Код доступен для использования и редактирования.
 
 С вопросами и предложениями можно обращаться в Дискорд  [p1gvo1ce](https://discordapp.com/users/469306021106417664)
 
@@ -49,6 +51,8 @@ In development:
 - Создание поиска пати из приватного канала без активности
 - Автоматическое добавление участникам сервера игровых ролей из активности Дискорд (если такая роль есть)
 - Автоматическое создание ролей из топ X активностей на сервере
+- Установка пользователем своего названия для временных каналов (глобальная настройка)
+- Возможность для пользователя отключить автоматическое обновление своих игровых ролей из статуса активности Дискорд
 
 В разработке:
 - Создание системы логирования событий на сервере (
