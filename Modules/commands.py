@@ -1,11 +1,13 @@
 import discord
 from discord import app_commands
+import random
 
 from Modules.db_control import (write_to_guild_settings_db, delete_from_guild_settings_db, get_top_games,
                                 write_to_buttons_db)
 from Modules.phrases import get_phrase
 from Modules.analytics import top_games_create_embed, plot_top_games, popularity_games_create_embed
 from Modules.buttons import FindPartyWithoutActivity
+from Modules.text_channels_control import add_game_in_game_roles_channel
 from utils import get_bot
 
 bot = get_bot()
@@ -49,14 +51,27 @@ async def create_party_search_channel(interaction: discord.Interaction):
 async def language(interaction: discord.Interaction, lang: str):
     langs = ['ru', 'en']
     if lang not in langs:
-        await interaction.response.send_message(f"you need to specify the language **ru** or **en**\n"
-                                                "нужно указать язык **ru** или **en**",
-                                                ephemeral=True)
+        embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+        description = (f"you need to specify the language **ru** or **en**\n"
+                       "нужно указать язык **ru** или **en**")
+        embed.description = description
+
+        await interaction.response.send_message(
+            embed=embed,
+            ephemeral=True
+        )
     else:
         delete_from_guild_settings_db(interaction.guild.id, 'language')
         write_to_guild_settings_db(interaction.guild.id, "language", lang)
 
-        await interaction.response.send_message(get_phrase('language_changed', interaction.guild), ephemeral=True)
+        embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+        description = get_phrase('language_changed', interaction.guild)
+        embed.description = description
+
+        await interaction.response.send_message(
+            embed=embed,
+            ephemeral=True
+        )
 
 
 # Получение анализа самых популярных игр на сервере
@@ -107,11 +122,74 @@ async def language(interaction: discord.Interaction, mode: str, delay: int):
             pass
         write_to_guild_settings_db(interaction.guild.id, "removing_greetings", mode)
         write_to_guild_settings_db(interaction.guild.id, "removing_greetings_delay", delay)
+
+        embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
         if mode == 'on':
-            await interaction.response.send_message(f"{get_phrase('Automatic greeting deletion enabled', interaction.guild)}.\n"
+
+            description = (f"{get_phrase('Automatic greeting deletion enabled', interaction.guild)}.\n"
                                                     f"{get_phrase('Delay', interaction.guild)} {delay} "
-                                                    f"{get_phrase('seconds', interaction.guild)}.",
-                                                    ephemeral=True)
+                                                    f"{get_phrase('seconds', interaction.guild)}.")
+            embed.description = description
+            await interaction.response.send_message(
+                embed=embed,
+                ephemeral=True
+            )
+
         else:
-            await interaction.response.send_message(f"{get_phrase('Automatic greeting deletion disabled', interaction.guild)}.\n",
-                                                    ephemeral=True)
+            description = get_phrase('Automatic greeting deletion disabled', interaction.guild)
+            embed.description = description
+            await interaction.response.send_message(
+                embed=embed,
+                ephemeral=True
+            )
+
+async def check_and_assign_roles(guild, top_games):
+    # Проверка каждой игры из топа
+    for game in top_games:
+        game_name = game[0]
+        role_name = game_name  # Используем имя игры как имя роли
+
+        # Проверяем, существует ли такая роль
+        role = discord.utils.get(guild.roles, name=role_name)
+
+        # Если роли нет, создаём её с рандомным цветом
+        if role is None:
+            random_color = random.randint(0, 0xFFFFFF)
+            role = await guild.create_role(name=role_name, color=discord.Color(random_color))
+            await add_game_in_game_roles_channel({role}, guild)  # Отправляем роль в специальный канал
+
+# Создание ролей для X популярных игр на сервере
+@bot.tree.command(name="create_top_games_roles", description="[admin] create roles for top games.")
+@app_commands.describe(top_count="Количество топ игр для создания ролей (например, топ 5)")
+@app_commands.checks.has_permissions(administrator=True)
+async def create_top_games_roles(interaction: discord.Interaction, top_count: int):
+    await interaction.response.defer()  # Отложенный ответ
+
+    guild = interaction.guild
+
+    # Получаем топ игр за последние 30 дней с гранулярностью "день"
+    top_games = get_top_games(guild.id, 30, 'day')
+
+    # Если нет данных о топ играх
+    if not top_games:
+        await interaction.followup.send("Нет данных о топ играх за указанный период.", ephemeral=True)
+        return
+
+    # Оставляем только top_count самых популярных игр
+    top_games = top_games[:top_count]
+
+    try:
+        # Проверяем и создаем роли для топ игр
+        await check_and_assign_roles(guild, top_games)
+
+        embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+        description = get_phrase('Roles for top games have been created', interaction.guild) % top_count
+        embed.description = description
+
+        await interaction.followup.send(
+            embed=embed,
+            ephemeral=True
+        )
+
+    except Exception as e:
+            await interaction.followup.send(f"Произошла ошибка: {str(e)}", ephemeral=True)

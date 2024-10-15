@@ -23,6 +23,8 @@ def save_activity_data(guild_id, activity_data):
 
 async def check_all_members(guild, db_conn):
     activity_data = {}
+    roles = guild.roles
+
     for member in guild.members:
         if member.activity and member.activity.type == discord.ActivityType.playing:
             activity_name = member.activity.name
@@ -35,7 +37,13 @@ async def check_all_members(guild, db_conn):
                     'timestamp': str(discord.utils.utcnow())
                 }]
             }
+
             insert_activity(db_conn, guild.id, member_id, activity_name)
+
+            role = discord.utils.get(roles, name=activity_name)
+            if role:
+                if role not in member.roles:
+                    await member.add_roles(role)
 
     save_activity_data(guild.id, activity_data)
 

@@ -7,13 +7,14 @@ from utils import get_bot
 bot = get_bot()
 from Modules.db_control import (check_and_initialize_main_db, get_token_from_db, request_token)
 from Modules.buttons import update_buttons_on_start
-from Modules.commands import create_party_search_channel, game_popularity_chart, top_games_command, language
+from Modules.commands import (create_party_search_channel, game_popularity_chart, top_games_command, language,
+                              create_top_games_roles)
 from Modules.voice_channels_control import find_party_controller
 from Modules.role_control import game_role_reaction_add, game_role_reaction_remove
 from Modules.events import start, join_from_invite, greetings_delete_greetings
 
 
-logging.basicConfig(level=logging.DEBUG)  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+logging.basicConfig(level=logging.INFO)  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 logger = logging.getLogger('discord')
 logger.setLevel(logging.INFO)
 tracemalloc.start()

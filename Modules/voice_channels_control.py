@@ -104,7 +104,7 @@ async def find_party_controller(member, before, after):
                         find_message = await text_channel.send(
                             content=f"{member.mention} {get_phrase('looking for a company', guild)} "
                                     f"{temp_channel.mention}.\n"
-                                    f"<@&{role.id}>"
+                                    f"## <@&{role.id}>"
                         )
 
                         invite_data = {"invite": invite.url}

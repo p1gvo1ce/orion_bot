@@ -213,6 +213,10 @@ If you want to create a role for searching, you need to:
     'There is no information on this activity.': {
         'ru': 'По этой активности нет информации.',
         'en': 'There is no information on this activity.'
+    },
+    'Roles for top games have been created': {
+        'ru': 'Роли для топ %s игр успешно созданы и назначены.',
+        'en': 'Roles for top %s games have been successfully created and assigned.'
     }
 }
 

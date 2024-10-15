@@ -38,8 +38,6 @@ async def update_buttons_on_start():
                     find_voices_ids.append(voice_channel_id)
                     if member and member.voice:
                         if str(member.voice.channel.id) != voice_channel_id:
-                            print(member.voice.channel.id)
-                            print(voice_channel_id)
                             await message.delete()
                         else:
                             await message.edit(view=None)
@@ -109,7 +107,7 @@ class FindInfoModal(discord.ui.Modal):
         find_message = await interaction.channel.send(
             content=f"{self.member.mention} {get_phrase('looking for a company', self.guild)} "
                     f"{self.member.voice.channel.mention}.\n"
-                    f"{activity}\n\n"
+                    f"## {activity}\n\n"
                     f"{get_phrase('Additional Information', self.guild_id)}:\n"
                     f"{self.activity_info}"
         )
