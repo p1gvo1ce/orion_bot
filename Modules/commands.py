@@ -1,9 +1,12 @@
+from enum import member
+
 import discord
 from discord import app_commands
 import random
 
 from Modules.db_control import (write_to_guild_settings_db, delete_from_guild_settings_db, get_top_games,
-                                write_to_buttons_db)
+                                write_to_buttons_db, write_to_members_db, read_member_data_from_db,
+                                delete_member_data_from_db)
 from Modules.phrases import get_phrase
 from Modules.analytics import top_games_create_embed, plot_top_games, popularity_games_create_embed
 from Modules.buttons import FindPartyWithoutActivity
@@ -77,7 +80,6 @@ async def language(interaction: discord.Interaction, lang: str):
 # Получение анализа самых популярных игр на сервере
 @bot.tree.command(name="top_games", description="Get top games for the last N days.")
 @app_commands.describe(days="Number of days to analyze", top="Number of top games", granularity="Granularity (day, week, month)")
-
 async def top_games_command(interaction: discord.Interaction, days: int, top: int, granularity: str):
     guild_id = interaction.guild_id
     top_games = get_top_games(guild_id, days, granularity)
@@ -193,3 +195,21 @@ async def create_top_games_roles(interaction: discord.Interaction, top_count: in
 
     except Exception as e:
             await interaction.followup.send(f"Произошла ошибка: {str(e)}", ephemeral=True)
+
+@bot.tree.command(name="set_voice_name", description="[Global] Set a name for your personal voice channel")
+@app_commands.describe(name="name for your personal voice channel")
+async def set_voice_name(interaction: discord.Interaction, name: str):
+    try:
+        delete_member_data_from_db(interaction.user, 'voice_channel_name')
+    except:
+        pass
+    write_to_members_db(interaction.user, 'voice_channel_name', name)
+
+    embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+    description = get_phrase('Name_personal_voice_set', interaction.guild)
+    embed.description = description
+
+    await interaction.response.send_message(
+        embed=embed,
+        ephemeral=True
+    )

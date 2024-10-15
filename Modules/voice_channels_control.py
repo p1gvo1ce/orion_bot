@@ -3,7 +3,7 @@ import json
 import discord
 import random
 import asyncio
-from Modules.db_control import read_from_guild_settings_db, write_to_buttons_db
+from Modules.db_control import read_from_guild_settings_db, write_to_buttons_db, read_member_data_from_db
 from Modules.text_channels_control import add_game_in_game_roles_channel
 from utils import clean_channel_id, get_bot
 from Modules.phrases import get_phrase
@@ -43,7 +43,7 @@ async def check_and_remove_nonexistent_channels():
 async def find_party_controller(member, before, after):
     guild_id = member.guild.id
     guild = member.guild
-
+    channel_name = member.nick if member.nick else member.name
     if after.channel and after.channel != before.channel:
         voice_channel_id = after.channel.id
 
@@ -55,11 +55,10 @@ async def find_party_controller(member, before, after):
             for activity in member.activities:
                 # Проверяем тип активности
                 if activity.type == discord.ActivityType.playing:
-                    channel_name = activity.name
-                    role_name = channel_name
+                    role_name = activity.name
                     role = discord.utils.get(after.channel.guild.roles, name=role_name)
+                    channel_name = activity.name
 
-                    # Если роль не существует, создаем ее
                     if role is None:
                         random_color = random.randint(0, 0xFFFFFF)
                         role = await after.channel.guild.create_role(name=role_name, color=discord.Color(random_color))
@@ -68,10 +67,10 @@ async def find_party_controller(member, before, after):
                     # Добавляем роль, если она еще не назначена
                     if role not in member.roles:
                         await member.add_roles(role)
-
-                else:
-                    channel_name = member.nick if member.nick else member.name
-
+            member_data = read_member_data_from_db(member, 'voice_channel_name')
+            print(member_data)
+            if member_data:
+                channel_name = member_data['data']
             if len(channel_name) > 100:
                 channel_name = channel_name[:100]
 

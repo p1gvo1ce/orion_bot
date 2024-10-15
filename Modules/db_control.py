@@ -258,3 +258,80 @@ def read_all_buttons_data():
         }
         for row in results
     ]
+
+def check_and_initialize_members_db():
+    db_path = os.path.join("Data", "members.db")
+    if not os.path.exists(db_path):
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute('''CREATE TABLE settings (member_id INTEGER PRIMARY KEY, option TEXT, data TEXT)''')
+        conn.commit()
+    else:
+        conn = sqlite3.connect(db_path)
+    return conn
+
+def create_settings_table():
+    check_and_initialize_members_db()
+    db_path = os.path.join("Data", "members.db")
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS settings (
+            member_id INTEGER PRIMARY KEY,
+            option TEXT,
+            data TEXT
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+def write_to_members_db(member, option, data=None):
+    db_path = os.path.join("Data", "members.db")
+    create_settings_table()
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO settings (member_id, option, data)
+        VALUES (?, ?, ?)
+        ON CONFLICT(member_id) DO UPDATE SET option = excluded.option, data = excluded.data
+    """, (member.id, option, json.dumps(data)))
+
+    conn.commit()
+    conn.close()
+
+def read_member_data_from_db(member, option):
+    db_path = os.path.join("Data", "members.db")
+    create_settings_table()
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT data FROM settings WHERE member_id = ? AND option = ?", (member.id, option))
+    result = cursor.fetchone()
+
+    conn.close()
+
+    if result:
+        data_json = result[0]
+        data = json.loads(data_json)
+        return {
+            "member_id": member.id,
+            "option": option,
+            "data": data
+        }
+    return None
+
+def delete_member_data_from_db(member, option):
+    db_path = os.path.join("Data", "members.db")
+    create_settings_table()
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM settings WHERE member_id = ? AND option = ?", (member.id, option))
+    conn.commit()
+    conn.close()

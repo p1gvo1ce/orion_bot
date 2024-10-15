@@ -217,6 +217,10 @@ If you want to create a role for searching, you need to:
     'Roles for top games have been created': {
         'ru': 'Роли для топ %s игр успешно созданы и назначены.',
         'en': 'Roles for top %s games have been successfully created and assigned.'
+    },
+    'Name_personal_voice_set': {
+        'ru': 'Задано название для личных голосовых каналов.',
+        'en': 'The name for personal voice channels has been set.'
     }
 }
 
