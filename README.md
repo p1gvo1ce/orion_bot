@@ -11,6 +11,8 @@ Implemented functionality:
 - design of notifications for company search
 - display in the search notification of server participants with the same activity within the last 10 minutes
 - Create party search from private channel with no activity
+- Automatically adding game roles to server members from Discord activity (if such a role exists)
+- Automatically creating roles from top X activities in the guild
 
 In development:
 - Creating a system for logging events on the server (
@@ -31,8 +33,6 @@ In development:
 - Assigning roles when connecting depending on the source of the invitation
 - Switching bot messages to embed where allowed
 
-
-
 ------------
 Бот разрабатывается исходя из личных потребностей. Код доступен для использования и редактирования.
 
@@ -47,6 +47,8 @@ In development:
 - оформление уведомлений для поиска компании
 - отображение в поисковом уведомлении участников сервера с той же активностью в пределах последних 10 минут
 - Создание поиска пати из приватного канала без активности
+- Автоматическое добавление участникам сервера игровых ролей из активности Дискорд (если такая роль есть)
+- Автоматическое создание ролей из топ X активностей на сервере
 
 В разработке:
 - Создание системы логирования событий на сервере (
