@@ -1,6 +1,5 @@
 import discord
 from discord import app_commands
-from discord.ext import commands
 
 from Modules.db_control import (write_to_guild_settings_db, delete_from_guild_settings_db, get_top_games,
                                 write_to_buttons_db)
@@ -15,7 +14,7 @@ bot = get_bot()
 # Создание каналов для автоматического поиска компании
 @bot.tree.command(name="create_party_search_channel", description="[admin] create channels for automatic party search.")
 @app_commands.describe()
-@commands.has_permissions(administrator=True)
+@app_commands.checks.has_permissions(administrator=True)
 async def create_party_search_channel(interaction: discord.Interaction):
     guild = interaction.guild  # Получаем объект сервера (гильдии)
 
@@ -46,7 +45,7 @@ async def create_party_search_channel(interaction: discord.Interaction):
 # Смена языка сообщений бота
 @bot.tree.command(name="language", description="[admin] change the language of bot messages.")
 @app_commands.describe(lang="langeuage (ru, en)")
-@commands.has_permissions(administrator=True)
+@app_commands.checks.has_permissions(administrator=True)
 async def language(interaction: discord.Interaction, lang: str):
     langs = ['ru', 'en']
     if lang not in langs:
@@ -94,7 +93,7 @@ async def game_popularity_chart(interaction: discord.Interaction, days: int, gra
 # Включение и выключения автоматического удаления приветствий
 @bot.tree.command(name="removing_greetings", description="[admin] Removing greetings.")
 @app_commands.describe(mode="removing_greetings (on, off)", delay="Seconds (0 to off)")
-@commands.has_permissions(administrator=True)
+@app_commands.checks.has_permissions(administrator=True)
 async def language(interaction: discord.Interaction, mode: str, delay: int):
     mods = ['on', 'off']
     if mode not in mods:

@@ -23,6 +23,7 @@ async def start():
     await periodic_check_for_guilds(bot)
 
 async def join_from_invite(member):
+    inviter = ''
     guild = member.guild
     invites_before = invitations[guild.id]
     invites_after = await guild.invites()

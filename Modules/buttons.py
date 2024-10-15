@@ -1,5 +1,8 @@
 import discord
 import re
+
+from matplotlib.style.core import context
+
 from Modules.phrases import get_phrase
 from Modules.db_control import (get_recent_activity_members, read_from_guild_settings_db,
                                 delete_button_data_from_db, read_all_buttons_data, write_to_buttons_db)
@@ -136,23 +139,38 @@ class FindPartyWithoutActivity(discord.ui.View):
         self.add_item(create_find)
 
     async def how_to_search(self, interaction: discord.Interaction):
+
+        embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+        description = get_phrase('how_to_search_instruction', self.guild.id)
+        embed.description = description
+
         await interaction.response.send_message(
-            f"{get_phrase('how_to_search_instruction', self.guild.id)}",
+            embed=embed,
             ephemeral=True
         )
+
+
 
     async def create_find(self, interaction: discord.Interaction):
         member = interaction.user
         if not member.voice:
+            embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+            description = get_phrase('You must be in the voice channel.', self.guild.id)
+            embed.description = description
+
             await interaction.response.send_message(
-                f"{get_phrase('You must be in the voice channel.', self.guild.id)}",
+                embed=embed,
                 ephemeral=True
             )
         else:
             async for message in interaction.channel.history(limit=20):
                 if str(member.id) in message.content:
+                    embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+                    description = get_phrase('You cannot run more than 1 search per person.', self.guild.id)
+                    embed.description = description
+
                     await interaction.response.send_message(
-                        f"{get_phrase('You cannot run more than 1 search per person.', self.guild.id)}",
+                        embed=embed,
                         ephemeral=True
                     )
                     return
@@ -222,31 +240,47 @@ class JoinButton(discord.ui.View):
         self.add_item(close_button)
 
     async def join_button_callback(self, interaction: discord.Interaction):
+        embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+        description = get_phrase('Click here to join', self.guild_id)
+        embed.description = description
+
         await interaction.response.send_message(
-            f"{get_phrase('Click here to join', self.guild_id)}: {self.invite_url}",
+            content = self.invite_url,
+            embed=embed,
             ephemeral=True
         )
 
     async def who_plays_button_callback(self, interaction: discord.Interaction):
         member = interaction.user
         if self.game == 'None':
+            embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+            description = get_phrase('There is no information on this activity.', self.guild_id)
+            embed.description = description
+
             await interaction.response.send_message(
-                get_phrase("There is no information on this activity.", self.guild_id),
+                embed=embed,
                 ephemeral=True
             )
             return
 
         recent_members = get_recent_activity_members(self.guild_id, self.game, minutes=10)
-
         if recent_members:
             member_mentions = [f"<@{member_id}>" for member_id in recent_members]
+            embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+            description = f"{get_phrase('Currently playing', self.guild_id)}  '__**{self.game}**__':\n" + "\n".join(member_mentions)
+            embed.description = description
+
             await interaction.response.send_message(
-                f"{get_phrase('Currently playing', self.guild_id)}  '__**{self.game}**__':\n" + "\n".join(member_mentions),
+                embed=embed,
                 ephemeral=True
             )
         else:
+            embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+            description = get_phrase('No one has been seen playing this game lately.', self.guild_id)
+            embed.description = description
+
             await interaction.response.send_message(
-                f"{get_phrase('No one has been seen playing this game lately.', self.guild_id)}",
+                embed=embed,
                 ephemeral=True
             )
 
