@@ -1,5 +1,5 @@
 from utils import clean_channel_id, get_bot
-from DataBase.db_control import read_from_guild_settings_db
+from Modules.db_control import read_from_guild_settings_db
 
 
 async def game_role_reaction_add(payload):

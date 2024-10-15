@@ -1,4 +1,4 @@
-from DataBase.db_control import read_from_guild_settings_db, write_to_guild_settings_db
+from Modules.db_control import read_from_guild_settings_db, write_to_guild_settings_db
 
 bot_phrases = {
     'language_changed': {

@@ -3,9 +3,9 @@ import json
 import asyncio
 import os
 from datetime import datetime
-from DataBase.db_control import check_and_initialize_activities_db, create_server_table, insert_activity
+from Modules.db_control import check_and_initialize_activities_db, create_server_table, insert_activity
 
-JSON_DIR = 'ActivityControl/jsons'
+JSON_DIR = 'Modules/jsons'
 
 # Создание каталога для json
 def ensure_json_directory_exists():

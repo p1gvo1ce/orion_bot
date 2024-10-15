@@ -1,8 +1,8 @@
 import discord
 import re
-from phrases import get_phrase
-from DataBase.db_control import (get_recent_activity_members, read_button_data_from_db, read_from_guild_settings_db,
-                                 delete_button_data_from_db, read_all_buttons_data)
+from Modules.phrases import get_phrase
+from Modules.db_control import (get_recent_activity_members, read_from_guild_settings_db,
+                                delete_button_data_from_db, read_all_buttons_data)
 from utils import  clean_channel_id, get_bot
 
 bot = get_bot()

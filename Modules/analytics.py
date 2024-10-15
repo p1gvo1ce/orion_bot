@@ -6,7 +6,7 @@ from matplotlib.ticker import MaxNLocator
 import io
 import os
 from datetime import datetime, timedelta, timezone
-from phrases import get_phrase
+from Modules.phrases import get_phrase
 
 # Подготовка данных о топ играх и построение графика
 def plot_top_games(guild, top_games, days, granularity, game = None):

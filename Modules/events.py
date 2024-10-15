@@ -1,12 +1,10 @@
 import discord
 import asyncio
 
-from pyexpat.errors import messages
-
-from ChannelControl.buttons import update_buttons_on_start
-from ActivityControl.activity_monitoring import periodic_check_for_guilds
-from DataBase.db_control import read_from_guild_settings_db
-from ChannelControl.voice_channels_control import check_and_remove_nonexistent_channels
+from Modules.buttons import update_buttons_on_start
+from Modules.activity_monitoring import periodic_check_for_guilds
+from Modules.db_control import read_from_guild_settings_db
+from Modules.voice_channels_control import check_and_remove_nonexistent_channels
 
 from utils import get_bot
 

@@ -1,5 +1,5 @@
 from utils import clean_channel_id
-from DataBase.db_control import read_from_guild_settings_db, write_to_guild_settings_db
+from Modules.db_control import read_from_guild_settings_db, write_to_guild_settings_db
 
 
 async def ensure_game_roles_channel(guild):

@@ -2,9 +2,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from DataBase.db_control import write_to_guild_settings_db, delete_from_guild_settings_db, get_top_games
-from phrases import get_phrase
-from Analytics.analytics import top_games_create_embed, plot_top_games, popularity_games_create_embed
+from Modules.db_control import write_to_guild_settings_db, delete_from_guild_settings_db, get_top_games
+from Modules.phrases import get_phrase
+from Modules.analytics import top_games_create_embed, plot_top_games, popularity_games_create_embed
 from utils import get_bot
 
 bot = get_bot()

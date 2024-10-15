@@ -1,9 +1,12 @@
+import discord
+from discord.ext import commands
 
-bot = None
+intents = discord.Intents.all()
+intents.message_content = True
+intents.guild_messages = True
+intents.dm_messages = False
+bot = commands.Bot(command_prefix='!', intents=intents)
 
-def send_bot(bot_from_main):
-    global bot
-    bot = bot_from_main
 
 def get_bot():
     global bot

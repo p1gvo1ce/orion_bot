@@ -3,11 +3,11 @@ import json
 import discord
 import random
 import asyncio
-from DataBase.db_control import read_from_guild_settings_db, write_to_buttons_db
-from ChannelControl.text_channels_control import add_game_in_game_roles_channel
+from Modules.db_control import read_from_guild_settings_db, write_to_buttons_db
+from Modules.text_channels_control import add_game_in_game_roles_channel
 from utils import clean_channel_id, get_bot
-from phrases import get_phrase
-from ChannelControl.buttons import JoinButton
+from Modules.phrases import get_phrase
+from Modules.buttons import JoinButton
 
 temp_channels_path = os.path.join("Data", "temp_channels.json")
 
@@ -81,7 +81,8 @@ async def find_party_controller(member, before, after):
 
             temp_channel = await after.channel.guild.create_voice_channel(
                 channel_name,
-                bitrate=max_bitrate
+                bitrate=max_bitrate,
+                category=after.channel.category
             )
 
             overwrite = discord.PermissionOverwrite()
