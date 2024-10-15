@@ -195,7 +195,7 @@ def create_buttons_table():
     conn.commit()
     conn.close()
 
-def write_to_buttons_db(server_id, message_id, button_type, data, member_id):
+def write_to_buttons_db(server_id, message_id, button_type, data=None, member_id=None):
     db_path = os.path.join("Data", "main.db")
     create_buttons_table()  # Убедимся, что таблица создана
 

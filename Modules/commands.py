@@ -2,9 +2,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from Modules.db_control import write_to_guild_settings_db, delete_from_guild_settings_db, get_top_games
+from Modules.db_control import (write_to_guild_settings_db, delete_from_guild_settings_db, get_top_games,
+                                write_to_buttons_db)
 from Modules.phrases import get_phrase
 from Modules.analytics import top_games_create_embed, plot_top_games, popularity_games_create_embed
+from Modules.buttons import FindPartyWithoutActivity
 from utils import get_bot
 
 bot = get_bot()
@@ -31,6 +33,9 @@ async def create_party_search_channel(interaction: discord.Interaction):
     # Записываем информацию в базу данных
     write_to_guild_settings_db(guild_id, "party_find_text_channel_id", f"id{text_channel_id}")
     write_to_guild_settings_db(guild_id, "party_find_voice_channel_id", f"id{voice_channel_id}")
+    find_message_without_activity = await text_channel.send(get_phrase('Create a party search', guild))
+    write_to_buttons_db(guild.id, find_message_without_activity.id, "FindPartyWithoutActivity", '{}', 12345)
+    await find_message_without_activity.edit(view=FindPartyWithoutActivity(guild))
 
     # Отправляем сообщение о создании каналов
     await interaction.response.send_message(f"{get_phrase('channels for party search created', guild)}:\n"

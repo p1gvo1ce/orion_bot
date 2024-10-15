@@ -144,6 +144,95 @@ bot_phrases = {
     'seconds': {
         'ru': 'секунд',
         'en': 'seconds'
+    },
+    'Create a party search': {
+        'ru': 'Создание поиска пати',
+        'en': 'Create a party search'
+    },
+    'How to search': {
+        'ru': 'Как искать',
+        'en': 'How to search'
+    },
+    'how_to_search_instruction': {
+        'ru': '''Чтобы начать поиск тебе нужно:
+
+```
+1. Присоединиться к любому доступному голосовому каналу
+2. Нажать кнопку "Создать поиск"
+3. Заполнить информацию об активности для которой ты ищешь людей и указать дополнительную информацию
+```
+Поиск будет существовать до тех пор, пока ты остаёшься в голосовом канале или пока не нажмешь кнопку завершения поиска
+Если на сервере есть роль соответствующая твоей активности (строгое соответствие названия), то эта роль будет упомянута в сообщении.
+
+Если ты хочешь создать роль для поиска, то нужно:
+```
+1. Включить в Дискорд синхронизацию со Стим или с другим источником активности (в твоем профиле должно отображаться "играет в..."
+2. Зайти в канал для поиска пати
+```''',
+        'en': '''To start a search you need to:
+
+```
+1. Join any available voice channel
+2. Click the "Create search" button
+3. Fill in the information about the activity for which you are searching for people and specify additional information
+```
+The search will exist as long as you remain in the voice channel or until you click the end search button
+If there is a role on the server that matches your activity (strict match of the name), then this role will be mentioned in the message.
+
+If you want to create a role for searching, you need to:
+```
+1. Enable syncing with Steam or another source of activity in Discord (your profile should display "plays in..."
+2. Go to the channel to search for a party
+```
+'''
+    },
+    'create_find': {
+        'ru': 'Создать поиск',
+        'en': 'Create a search'
+    },
+    'You must be in the voice channel.': {
+        'ru': 'Ты должен быть в голосовом канале.',
+        'en': 'You must be in the voice channel.'
+    },
+    'Activity name': {
+        'ru': 'Название активности',
+        'en': 'Activity name'
+    },
+    'Enter the activity name here': {
+        'ru': 'Укажи название активности здесь',
+        'en': 'Enter the activity name here'
+    },
+    'You cannot run more than 1 search per person.': {
+        'ru': 'Нельзя запустить более 1 поиска на человека.',
+        'en': 'You cannot run more than 1 search per person.'
+    },
+    'No one has been seen playing this game lately.': {
+        'ru': 'В последнее время никто не замечен в этой игре.',
+        'en': 'No one has been seen playing this game lately.'
+    },
+    'There is no information on this activity.': {
+        'ru': 'По этой активности нет информации.',
+        'en': 'There is no information on this activity.'
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
     }
 }
 
