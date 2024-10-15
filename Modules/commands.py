@@ -213,3 +213,24 @@ async def set_voice_name(interaction: discord.Interaction, name: str):
         embed=embed,
         ephemeral=True
     )
+
+@bot.tree.command(name="update_game_roles", description="[Global] Enable/disable game role update")
+@app_commands.describe(mode="Mode (on, off)")
+async def dont_update_roles(interaction: discord.Interaction, mode: str):
+    try:
+        delete_member_data_from_db(interaction.user, 'game_roles_update')
+    except:
+        pass
+    write_to_members_db(interaction.user, 'game_roles_update', mode)
+
+    embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+    if mode == 'on':
+        description = get_phrase('Game Roles Update Enabled', interaction.guild)
+    else:
+        description = get_phrase('Game role update disabled', interaction.guild)
+    embed.description = description
+
+    await interaction.response.send_message(
+        embed=embed,
+        ephemeral=True
+    )

@@ -168,7 +168,9 @@ bot_phrases = {
 ```
 1. Включить в Дискорд синхронизацию со Стим или с другим источником активности (в твоем профиле должно отображаться "играет в..."
 2. Зайти в канал для поиска пати
-```''',
+```
+Если это невозможно для какой-то активности, то необходимо обратиться к владельцам (администраторам) сервера для создания роли активности вручную
+''',
         'en': '''To start a search you need to:
 
 ```
@@ -184,6 +186,7 @@ If you want to create a role for searching, you need to:
 1. Enable syncing with Steam or another source of activity in Discord (your profile should display "plays in..."
 2. Go to the channel to search for a party
 ```
+If this is not possible for some activity, then you need to contact the owners (administrators) of the server to create the activity role manually.
 '''
     },
     'create_find': {
@@ -221,6 +224,14 @@ If you want to create a role for searching, you need to:
     'Name_personal_voice_set': {
         'ru': 'Задано название для личных голосовых каналов.',
         'en': 'The name for personal voice channels has been set.'
+    },
+    'Game Roles Update Enabled': {
+        'ru': 'Включено обновление игровых ролей',
+        'en': 'Game Roles Update Enabled'
+    },
+    'Game role update disabled': {
+        'ru': 'Выключено обновление игровых ролей',
+        'en': 'Game role update disabled'
     }
 }
 

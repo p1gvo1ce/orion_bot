@@ -53,7 +53,6 @@ async def find_party_controller(member, before, after):
         if voice_channel_id in search_voice_channel_ids:
 
             for activity in member.activities:
-                # Проверяем тип активности
                 if activity.type == discord.ActivityType.playing:
                     role_name = activity.name
                     role = discord.utils.get(after.channel.guild.roles, name=role_name)
@@ -64,11 +63,9 @@ async def find_party_controller(member, before, after):
                         role = await after.channel.guild.create_role(name=role_name, color=discord.Color(random_color))
                         await add_game_in_game_roles_channel(role, after.channel.guild)
 
-                    # Добавляем роль, если она еще не назначена
                     if role not in member.roles:
                         await member.add_roles(role)
             member_data = read_member_data_from_db(member, 'voice_channel_name')
-            print(member_data)
             if member_data:
                 channel_name = member_data['data']
             if len(channel_name) > 100:

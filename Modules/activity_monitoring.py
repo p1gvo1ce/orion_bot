@@ -3,7 +3,8 @@ import json
 import asyncio
 import os
 from datetime import datetime
-from Modules.db_control import check_and_initialize_activities_db, create_server_table, insert_activity
+from Modules.db_control import (check_and_initialize_activities_db, create_server_table, insert_activity,
+                                read_member_data_from_db)
 from utils import get_logger, logger
 
 logger = get_logger()
@@ -28,6 +29,9 @@ async def check_all_members(guild, db_conn):
     roles = guild.roles
 
     for member in guild.members:
+        member_data = read_member_data_from_db(member, 'voice_channel_name')
+        if member_data and member_data.get('data') == 'off':
+            continue
         for activity in member.activities:
             if activity.type == discord.ActivityType.playing:
                 activity_name = activity.name
