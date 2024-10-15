@@ -56,7 +56,7 @@ def main():
         print("Токен не найден.")
         token = request_token(conn)
 
-    asyncio.run(run_bot(token, conn))  # Запуск бота
+    asyncio.run(run_bot(token, conn))
 
 if __name__ == "__main__":
     main()

@@ -13,14 +13,12 @@ temp_channels_path = os.path.join("Data", "temp_channels.json")
 
 bot = get_bot()
 
-# Функция для загрузки временных каналов из JSON
 def load_temp_channels():
     if os.path.exists(temp_channels_path):
         with open(temp_channels_path, "r") as f:
             return json.load(f)
     return {}
 
-# Функция для сохранения временных каналов в JSON
 def save_temp_channels(temp_channels):
     os.makedirs(os.path.dirname(temp_channels_path), exist_ok=True)
     with open(temp_channels_path, "w") as f:
@@ -37,22 +35,18 @@ async def check_and_remove_nonexistent_channels():
         if guild is not None:
             channel = guild.get_channel(int(channel_id))
 
-            # Если канал больше не существует, удаляем его из temp_channels
             if channel is None:
                 del temp_channels[channel_id]
 
-    # Сохраняем обновлённые данные
     save_temp_channels(temp_channels)
 
 async def find_party_controller(member, before, after):
     guild_id = member.guild.id
     guild = member.guild
 
-    # Проверяем, подключился ли участник к новому каналу
     if after.channel and after.channel != before.channel:
         voice_channel_id = after.channel.id
 
-        # Чтение данных о поисковых каналах из базы данных
         search_voice_channel_ids = read_from_guild_settings_db(guild_id, "party_find_voice_channel_id")
         search_voice_channel_ids = [clean_channel_id(id_str) for id_str in search_voice_channel_ids]
 
@@ -113,11 +107,9 @@ async def find_party_controller(member, before, after):
                                     f"<@&{role.id}>"
                         )
 
-                        # Сохраняем данные о сообщении, кнопке и участнике в базу данных
                         invite_data = {"invite": invite.url}
                         write_to_buttons_db(guild.id, find_message.id, "JoinButton", invite_data, member.id)
 
-                        # Добавляем кнопки к сообщению
                         await find_message.edit(view=JoinButton(invite.url, guild.id, member.activity.name, member.id))
                         break
 
@@ -148,7 +140,6 @@ async def find_message_delete(guild, member):
     except discord.NotFound:
         pass
 
-# Проверка наличия участника в голосовом (актуальность поиска)
 async def check_member_in_channel(member, temp_channel, find_message, invite):
     while True:
         await asyncio.sleep(30)

@@ -67,7 +67,6 @@ def insert_activity(conn, guild_id, member_id, activity_name):
 def close_connection(conn):
     conn.close()
 
-# Получение ids по активности за последние 10 минут
 def get_recent_activity_members(guild_id, activity_name, minutes=10):
     conn = sqlite3.connect(os.path.join("Data", "game_activities.db"))
     c = conn.cursor()
@@ -85,7 +84,6 @@ def get_recent_activity_members(guild_id, activity_name, minutes=10):
     return [row[0].replace("id_", "") for row in results]  # Убираем префикс "id_"
 
 
-# Функция для получения данных из базы данных
 def get_top_games(guild_id, days, granularity):
     conn = sqlite3.connect(os.path.join("Data", "game_activities.db"))
     c = conn.cursor()
@@ -98,7 +96,6 @@ def get_top_games(guild_id, days, granularity):
     start_date_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
     end_date_str = end_date.strftime('%Y-%m-%d %H:%M:%S')
 
-    # Запрос для получения активности за последние N дней
     query = f"""
         SELECT activity_name, COUNT(DISTINCT member_id)
         FROM {table_name}
@@ -113,7 +110,6 @@ def get_top_games(guild_id, days, granularity):
 
     return result
 
-# Создание таблицы с настройками сервера в main.db
 def create_guild_table(guild_id):
     db_path = os.path.join("Data", "main.db")
     conn = sqlite3.connect(db_path)
@@ -131,7 +127,6 @@ def create_guild_table(guild_id):
     conn.close()
 
 
-# Запись данных в таблицу сервера
 def write_to_guild_settings_db(guild_id, param_name, param_value):
     db_path = os.path.join("Data", "main.db")
     create_guild_table(guild_id)
@@ -149,14 +144,12 @@ def write_to_guild_settings_db(guild_id, param_name, param_value):
     conn.commit()
     conn.close()
 
-# Удаление данных из таблицы сервера
 def delete_from_guild_settings_db(guild_id: int, param_name: str) -> None:
     db_path = os.path.join("Data", "main.db")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     table_name = f"guild_{guild_id}"
 
-    # Удаляем параметр
     cursor.execute(f"DELETE FROM {table_name} WHERE param_name = ?", (param_name,))
 
     conn.commit()
@@ -197,7 +190,7 @@ def create_buttons_table():
 
 def write_to_buttons_db(server_id, message_id, button_type, data=None, member_id=None):
     db_path = os.path.join("Data", "main.db")
-    create_buttons_table()  # Убедимся, что таблица создана
+    create_buttons_table()
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()

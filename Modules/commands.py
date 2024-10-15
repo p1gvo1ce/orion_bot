@@ -91,8 +91,9 @@ async def game_popularity_chart(interaction: discord.Interaction, days: int, gra
     embed.set_image(url=f"attachment://{game}_popularity.png")
     await interaction.response.send_message(embed=embed, file=file)
 
+# Включение и выключения автоматического удаления приветствий
 @bot.tree.command(name="removing_greetings", description="[admin] Removing greetings.")
-@app_commands.describe(mode="removing_greetings (on, off)", delay="Seconds")
+@app_commands.describe(mode="removing_greetings (on, off)", delay="Seconds (0 to off)")
 @commands.has_permissions(administrator=True)
 async def language(interaction: discord.Interaction, mode: str, delay: int):
     mods = ['on', 'off']

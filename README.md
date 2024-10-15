@@ -10,9 +10,26 @@ Implemented functionality:
 - adding a choice of language for messages from the bot (Russian/English)
 - design of notifications for company search
 - display in the search notification of server participants with the same activity within the last 10 minutes
-- 
-In development:
 - Create party search from private channel with no activity
+
+In development:
+- Creating a system for logging events on the server (
+  - joining participants to the server
+  - leaving participants from the server
+  - banning participants
+  - muting participants
+  - creating channels
+  - changing channels
+  - deleting channels
+  - editing messages
+  - deleting messages
+  - connecting to voice channels
+  - disconnecting from voice channels
+  - switching to other voice channels
+  )
+- Creating general notes about users available to server moderators
+- Assigning roles when connecting depending on the source of the invitation
+- Switching bot messages to embed where allowed
 
 
 
@@ -29,7 +46,24 @@ In development:
 - добавление выбора языка сообщений от бота (русский/английский)
 - оформление уведомлений для поиска компании
 - отображение в поисковом уведомлении участников сервера с той же активностью в пределах последних 10 минут
+- Создание поиска пати из приватного канала без активности
 
 В разработке:
-- Создание поиска пати из приватного канала без активности
+- Создание системы логирования событий на сервере (
+    - присоединение участников к серверу
+    - уход участников с сервера
+    - бан участников
+    - мут участников
+    - создание каналов
+    - изменение каналов
+    - удаление каналов
+    - редактирование сообщений
+    - удаление сообщений
+    - подключение к голосовым каналам
+    - отключение от голосовых каналов
+    - переключение в другие голосовые каналы
+  )
+- Создание общих заметок о пользователях доступные для модераторов сервера
+- Присвоение ролей при подключении в зависимости от источника приглашения
+- Переход сообщений бота на embed там, где это допустимо
 

@@ -16,7 +16,6 @@ async def game_role_reaction_add(payload):
 
     game_roles_channel_ids = [clean_channel_id(id_str) for id_str in game_roles_channel_ids]
 
-    # Проверяем, находится ли канал в списке игровых ролей
     if channel.id in game_roles_channel_ids:
         role_mentions = message.role_mentions
         if role_mentions:
@@ -43,7 +42,6 @@ async def game_role_reaction_remove(payload):
 
     game_roles_channel_ids = [clean_channel_id(id_str) for id_str in game_roles_channel_ids]
 
-    # Проверяем, находится ли канал в списке игровых ролей
     if channel.id in game_roles_channel_ids:
         role_mentions = message.role_mentions
         if role_mentions:

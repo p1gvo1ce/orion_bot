@@ -10,7 +10,6 @@ from utils import get_bot
 
 bot = get_bot()
 
-# Словарь для хранения приглашений
 invitations = {}
 
 async def start():
@@ -28,15 +27,16 @@ async def join_from_invite(member):
     invites_before = invitations[guild.id]
     invites_after = await guild.invites()
 
-    # Сравниваем приглашения, чтобы найти, по какому пригласили участника
     for invite in invites_before:
         for after in invites_after:
             if invite.code == after.code:
-                # Если количество использований изменилось
                 if invite.uses < after.uses:
                     inviter = invite.inviter
                     invite_code = invite.code
                     break
+
+
+    # While there is no logging system on the server, the output is simply to the console via print
     if inviter:
         print(f'{member.name} joined via invitation {invite_code}, invited by {inviter.name}.')
     else:

@@ -213,26 +213,6 @@ If you want to create a role for searching, you need to:
     'There is no information on this activity.': {
         'ru': 'По этой активности нет информации.',
         'en': 'There is no information on this activity.'
-    },
-    '': {
-        'ru': '',
-        'en': ''
-    },
-    '': {
-        'ru': '',
-        'en': ''
-    },
-    '': {
-        'ru': '',
-        'en': ''
-    },
-    '': {
-        'ru': '',
-        'en': ''
-    },
-    '': {
-        'ru': '',
-        'en': ''
     }
 }
 

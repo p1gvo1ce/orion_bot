@@ -8,7 +8,6 @@ from utils import  clean_channel_id, get_bot
 bot = get_bot()
 
 async def update_buttons_on_start():
-    # Читаем все записи из базы данных
     buttons_data = read_all_buttons_data()
     find_voices_ids = []
     for button_data in buttons_data:
@@ -16,26 +15,21 @@ async def update_buttons_on_start():
         guild = bot.get_guild(guild_id)
 
         if guild:
-            # Получаем канал, по которому мы знаем, что могло быть отправлено сообщение
             search_text_channel_ids = read_from_guild_settings_db(guild_id, "party_find_text_channel_id")
             search_text_channel_ids = [clean_channel_id(id_str) for id_str in search_text_channel_ids]
 
-            # Ищем сообщение по его ID
             message = None
             for text_channel_id in search_text_channel_ids:
                 text_channel = guild.get_channel(text_channel_id)
                 if text_channel:
                     try:
-                        # Пробуем получить сообщение по его ID
                         message = await text_channel.fetch_message(button_data["message_id"])
                         break
                     except discord.NotFound:
-                        # Если сообщение не найдено в этом канале, продолжаем поиск в других каналах
                         continue
 
             if message:
                 if button_data["button_type"] == "JoinButton":
-                # Сообщение найдено, теперь обновляем кнопки
                     member = guild.get_member(button_data["member_id"])
                     voice_channel_id = extract_id(message.content)
                     find_voices_ids.append(voice_channel_id)
@@ -45,7 +39,7 @@ async def update_buttons_on_start():
                             print(voice_channel_id)
                             await message.delete()
                         else:
-                            await message.edit(view=None)  # Удаляем старые кнопки
+                            await message.edit(view=None)
 
 
                     invite = button_data["data"].get("invite")
@@ -63,7 +57,6 @@ async def update_buttons_on_start():
 
 
             else:
-                # Если сообщение не найдено, удаляем запись из базы данных
                 delete_button_data_from_db(button_data["message_id"])
 
         for voice in guild.voice_channels:
@@ -121,7 +114,6 @@ class FindInfoModal(discord.ui.Modal):
         invite_data = {"invite": invite.url}
         write_to_buttons_db(self.guild.id, find_message.id, "JoinButton", invite_data, self.member.id)
 
-        # Добавляем кнопки к сообщению
         await find_message.edit(view=JoinButton(invite.url, self.guild.id, self.activity_name, self.member.id))
 
 class FindPartyWithoutActivity(discord.ui.View):
@@ -177,19 +169,16 @@ class AddInfoModal(discord.ui.Modal):
         self.add_item(discord.ui.TextInput(
             label=get_phrase("Additional Information", self.guild_id),
             placeholder=get_phrase("Enter any additional details here...", self.guild_id),
-            max_length=200  # Ограничиваем длину сообщения
+            max_length=200
         ))
 
     async def on_submit(self, interaction: discord.Interaction):
-        # Получаем введённый текст
         additional_info = self.children[0].value
 
-        # Обновляем сообщение поиска, добавляя новую информацию
         updated_content = (f"{self.original_message.content}\n\n"
                            f"{get_phrase('Additional Information', self.guild_id)}:\n {additional_info}")
         await self.original_message.edit(content=updated_content)
 
-        # Сообщаем пользователю об успешном добавлении
         await interaction.response.send_message(
             get_phrase("Information successfully added.", self.guild_id),
             ephemeral=True
@@ -239,7 +228,6 @@ class JoinButton(discord.ui.View):
         )
 
     async def who_plays_button_callback(self, interaction: discord.Interaction):
-        # Получаем активность текущего пользователя
         member = interaction.user
         if self.game == 'None':
             await interaction.response.send_message(
@@ -248,7 +236,6 @@ class JoinButton(discord.ui.View):
             )
             return
 
-        # Ищем всех пользователей с той же активностью за последние 10 минут
         recent_members = get_recent_activity_members(self.guild_id, self.game, minutes=10)
 
         if recent_members:
@@ -271,7 +258,6 @@ class JoinButton(discord.ui.View):
             )
             return
 
-        # Открываем модальное окно для ввода информации
         modal = AddInfoModal(interaction.message, self.guild_id)
         await interaction.response.send_modal(modal)
 
