@@ -131,14 +131,29 @@ async def find_party_controller(member, before, after):
                 del temp_channels[str(before.channel.id)]
                 save_temp_channels(temp_channels)
 
+        await find_message_delete(before.channel.guild, member)
+
+async def find_message_delete(guild, member):
+    try:
+        search_text_channel_ids = read_from_guild_settings_db(guild.id, "party_find_text_channel_id")
+        search_text_channel_ids = [clean_channel_id(id_str) for id_str in search_text_channel_ids]
+        for text_channel_id in search_text_channel_ids:
+            text_channel = member.guild.get_channel(text_channel_id)
+            if text_channel:
+                async for message in text_channel.history(limit=20):
+                    if str(member.id) in message.content:
+                        await message.delete()
+
+
+    except discord.NotFound:
+        pass
+
 # Проверка наличия участника в голосовом (актуальность поиска)
 async def check_member_in_channel(member, temp_channel, find_message, invite):
     while True:
         await asyncio.sleep(30)
 
         if member not in temp_channel.members:
-            try:
-                await find_message.delete()
-            except discord.NotFound:
-                pass
+            await find_message_delete(temp_channel.guild, member)
+
             break
