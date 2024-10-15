@@ -1,4 +1,3 @@
-import logging
 import tracemalloc
 import asyncio
 import os
@@ -13,10 +12,6 @@ from Modules.voice_channels_control import find_party_controller
 from Modules.role_control import game_role_reaction_add, game_role_reaction_remove
 from Modules.events import start, join_from_invite, greetings_delete_greetings
 
-
-logging.basicConfig(level=logging.INFO)  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-logger = logging.getLogger('discord')
-logger.setLevel(logging.INFO)
 tracemalloc.start()
 
 listeners = {
@@ -39,7 +34,7 @@ async def run_bot(token, conn):
         try:
             await bot.start(token)
         except Exception as e:
-            print(f"Бот остановлен из-за ошибки: {e}")
+            print(f"The bot has been stopped due to an error: {e}")
             if str(e) == "Improper token has been passed.":
                 token = request_token(conn)
             else:
@@ -54,7 +49,7 @@ def main():
     token = get_token_from_db(conn)
 
     if not token:
-        print("Токен не найден.")
+        print("Token not found.")
         token = request_token(conn)
 
     asyncio.run(run_bot(token, conn))

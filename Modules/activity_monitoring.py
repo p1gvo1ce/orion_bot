@@ -4,7 +4,9 @@ import asyncio
 import os
 from datetime import datetime
 from Modules.db_control import check_and_initialize_activities_db, create_server_table, insert_activity
+from utils import get_logger, logger
 
+logger = get_logger()
 JSON_DIR = 'Modules/jsons'
 
 def ensure_json_directory_exists():
@@ -57,5 +59,5 @@ async def periodic_check_for_guilds(bot):
             await check_all_members(guild, db_conn)
             server_names.append(guild.name)
         current_time = datetime.now().strftime('%Y.%m.%d %H.%M')
-        print(f"[{current_time}] Activity data updated for servers: " + ", ".join(server_names))
+        logger.info(f"[{current_time}] Activity data updated for servers: " + ", ".join(server_names))
         await asyncio.sleep(600)

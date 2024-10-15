@@ -33,10 +33,10 @@ def update_token_in_db(conn, token):
 
 def request_token(conn):
     while True:
-        token = input("Введите токен / Enter token: ").strip()
+        token = input("Enter token: ").strip()
         if token:
             update_token_in_db(conn, token)
-            print("Токен сохранен.\nToken saved")
+            print("Token saved")
             return token
 
 
