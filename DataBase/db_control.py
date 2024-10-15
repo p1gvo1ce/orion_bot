@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 def check_and_initialize_main_db():
-    db_path = os.path.join("DataBase", "main.db")
+    db_path = os.path.join("Data", "main.db")
     if not os.path.exists(db_path):
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
@@ -41,7 +41,7 @@ def request_token(conn):
 
 
 def check_and_initialize_activities_db():
-    db_path = os.path.join("DataBase", "game_activities.db")
+    db_path = os.path.join("Data", "game_activities.db")
     if not os.path.exists(db_path):
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
@@ -69,7 +69,7 @@ def close_connection(conn):
 
 # Получение ids по активности за последние 10 минут
 def get_recent_activity_members(guild_id, activity_name, minutes=10):
-    conn = sqlite3.connect(os.path.join("DataBase", "game_activities.db"))
+    conn = sqlite3.connect(os.path.join("Data", "game_activities.db"))
     c = conn.cursor()
     table_name = f"guild_{guild_id}"
     time_threshold = (datetime.now() - timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M:%S")
@@ -87,7 +87,7 @@ def get_recent_activity_members(guild_id, activity_name, minutes=10):
 
 # Функция для получения данных из базы данных
 def get_top_games(guild_id, days, granularity):
-    conn = sqlite3.connect(os.path.join("DataBase", "game_activities.db"))
+    conn = sqlite3.connect(os.path.join("Data", "game_activities.db"))
     c = conn.cursor()
 
     table_name = f"guild_{guild_id}"
@@ -115,7 +115,7 @@ def get_top_games(guild_id, days, granularity):
 
 # Создание таблицы с настройками сервера в main.db
 def create_guild_table(guild_id):
-    db_path = os.path.join("DataBase", "main.db")
+    db_path = os.path.join("Data", "main.db")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     table_name = f"guild_{guild_id}"
@@ -133,7 +133,7 @@ def create_guild_table(guild_id):
 
 # Запись данных в таблицу сервера
 def write_to_guild_settings_db(guild_id, param_name, param_value):
-    db_path = os.path.join("DataBase", "main.db")
+    db_path = os.path.join("Data", "main.db")
     create_guild_table(guild_id)
 
     conn = sqlite3.connect(db_path)
@@ -151,7 +151,7 @@ def write_to_guild_settings_db(guild_id, param_name, param_value):
 
 # Удаление данных из таблицы сервера
 def delete_from_guild_settings_db(guild_id: int, param_name: str) -> None:
-    db_path = os.path.join("DataBase", "main.db")
+    db_path = os.path.join("Data", "main.db")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     table_name = f"guild_{guild_id}"
@@ -165,7 +165,7 @@ def delete_from_guild_settings_db(guild_id: int, param_name: str) -> None:
 
 # Чтение данных из таблицы сервера
 def read_from_guild_settings_db(guild_id, param_name):
-    db_path = os.path.join("DataBase", "main.db")
+    db_path = os.path.join("Data", "main.db")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     table_name = f"guild_{guild_id}"
@@ -178,7 +178,7 @@ def read_from_guild_settings_db(guild_id, param_name):
     return [result[0] for result in results] if results else []
 
 def create_buttons_table():
-    db_path = os.path.join("DataBase", "main.db")
+    db_path = os.path.join("Data", "main.db")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
@@ -196,7 +196,7 @@ def create_buttons_table():
     conn.close()
 
 def write_to_buttons_db(server_id, message_id, button_type, data, member_id):
-    db_path = os.path.join("DataBase", "main.db")
+    db_path = os.path.join("Data", "main.db")
     create_buttons_table()  # Убедимся, что таблица создана
 
     conn = sqlite3.connect(db_path)
@@ -212,7 +212,7 @@ def write_to_buttons_db(server_id, message_id, button_type, data, member_id):
     conn.close()
 
 def read_button_data_from_db(message_id):
-    db_path = os.path.join("DataBase", "main.db")
+    db_path = os.path.join("Data", "main.db")
     create_buttons_table()
 
     conn = sqlite3.connect(db_path)
@@ -235,7 +235,7 @@ def read_button_data_from_db(message_id):
     return None
 
 def delete_button_data_from_db(message_id):
-    db_path = os.path.join("DataBase", "main.db")
+    db_path = os.path.join("Data", "main.db")
     create_buttons_table()
 
     conn = sqlite3.connect(db_path)
@@ -246,7 +246,7 @@ def delete_button_data_from_db(message_id):
     conn.close()
 
 def read_all_buttons_data():
-    db_path = os.path.join("DataBase", "main.db")
+    db_path = os.path.join("Data", "main.db")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 

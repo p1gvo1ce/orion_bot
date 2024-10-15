@@ -85,3 +85,28 @@ async def game_popularity_chart(interaction: discord.Interaction, days: int, gra
     file = discord.File(fp=graph_buf, filename=f"{game}_popularity.png")
     embed.set_image(url=f"attachment://{game}_popularity.png")
     await interaction.response.send_message(embed=embed, file=file)
+
+@bot.tree.command(name="removing_greetings", description="[admin] Removing greetings.")
+@app_commands.describe(mode="removing_greetings (on, off)", delay="Seconds")
+@commands.has_permissions(administrator=True)
+async def language(interaction: discord.Interaction, mode: str, delay: int):
+    mods = ['on', 'off']
+    if mode not in mods:
+        await interaction.response.send_message(get_phrase('You need to specify the on/off mode'),
+                                                ephemeral=True)
+    else:
+        try:
+            delete_from_guild_settings_db(interaction.guild.id, 'removing_greetings')
+            delete_from_guild_settings_db(interaction.guild.id, 'removing_greetings_delay')
+        except:
+            pass
+        write_to_guild_settings_db(interaction.guild.id, "removing_greetings", mode)
+        write_to_guild_settings_db(interaction.guild.id, "removing_greetings_delay", delay)
+        if mode == 'on':
+            await interaction.response.send_message(f"{get_phrase('Automatic greeting deletion enabled', interaction.guild)}.\n"
+                                                    f"{get_phrase('Delay', interaction.guild)} {delay} "
+                                                    f"{get_phrase('seconds', interaction.guild)}.",
+                                                    ephemeral=True)
+        else:
+            await interaction.response.send_message(f"{get_phrase('Automatic greeting deletion disabled', interaction.guild)}.\n",
+                                                    ephemeral=True)

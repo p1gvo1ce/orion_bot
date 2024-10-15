@@ -5,11 +5,13 @@ import random
 import asyncio
 from DataBase.db_control import read_from_guild_settings_db, write_to_buttons_db
 from ChannelControl.text_channels_control import add_game_in_game_roles_channel
-from utils import clean_channel_id
+from utils import clean_channel_id, get_bot
 from phrases import get_phrase
 from ChannelControl.buttons import JoinButton
 
-temp_channels_path = os.path.join("ChannelControl", "temp_channels.json")
+temp_channels_path = os.path.join("Data", "temp_channels.json")
+
+bot = get_bot()
 
 # Функция для загрузки временных каналов из JSON
 def load_temp_channels():
@@ -23,6 +25,24 @@ def save_temp_channels(temp_channels):
     os.makedirs(os.path.dirname(temp_channels_path), exist_ok=True)
     with open(temp_channels_path, "w") as f:
         json.dump(temp_channels, f, indent=4)
+
+
+async def check_and_remove_nonexistent_channels():
+    temp_channels = load_temp_channels()
+
+    for channel_id, channel_info in list(temp_channels.items()):
+        guild_id = channel_info['guild_id']
+        guild = bot.get_guild(guild_id)
+
+        if guild is not None:
+            channel = guild.get_channel(int(channel_id))
+
+            # Если канал больше не существует, удаляем его из temp_channels
+            if channel is None:
+                del temp_channels[channel_id]
+
+    # Сохраняем обновлённые данные
+    save_temp_channels(temp_channels)
 
 async def find_party_controller(member, before, after):
     guild_id = member.guild.id

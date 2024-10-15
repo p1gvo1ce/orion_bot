@@ -124,6 +124,26 @@ bot_phrases = {
     'unique players over all time': {
         'ru': 'уникальных игроков за период',
         'en': 'unique players over all time'
+    },
+    'You need to specify the on/off mode': {
+        'ru': 'Нужно указать режим on/off',
+        'en': 'You need to specify the on/off mode'
+    },
+    'Automatic greeting deletion enabled': {
+        'ru': 'Включено автоматическое удаление приветствий',
+        'en': 'Automatic greeting deletion enabled'
+    },
+    'Delay': {
+        'ru': 'Задержка',
+        'en': 'Delay'
+    },
+    'Automatic greeting deletion disabled': {
+        'ru': 'Выключено автоматическое удаление приветствий',
+        'en': 'Automatic greeting deletion disabled'
+    },
+    'seconds': {
+        'ru': 'секунд',
+        'en': 'seconds'
     }
 }
 

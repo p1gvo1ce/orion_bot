@@ -27,14 +27,15 @@ from ChannelControl.buttons import update_buttons_on_start
 from commands import create_party_search_channel, game_popularity_chart, top_games_command, language
 from ChannelControl.voice_channels_control import find_party_controller
 from MemberControl.role_control import game_role_reaction_add, game_role_reaction_remove
-from events import start, join_from_invite
+from events import start, join_from_invite, greetings_delete_greetings
 
 listeners = {
     'on_ready': 'start',
     'on_member_join': 'join_from_invite',
     'on_voice_state_update': 'find_party_controller',
     'on_raw_reaction_add': 'game_role_reaction_add',
-    'on_raw_reaction_remove': 'game_role_reaction_remove'
+    'on_raw_reaction_remove': 'game_role_reaction_remove',
+    'on_message': 'greetings_delete_greetings'
 }
 for event_type, handler in listeners.items():
     bot.add_listener(globals()[handler], event_type)

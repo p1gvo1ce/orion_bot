@@ -10,7 +10,7 @@ from phrases import get_phrase
 
 # Подготовка данных о топ играх и построение графика
 def plot_top_games(guild, top_games, days, granularity, game = None):
-    conn = sqlite3.connect(os.path.join("DataBase", "game_activities.db"))
+    conn = sqlite3.connect(os.path.join("Data", "game_activities.db"))
     c = conn.cursor()
     guild_id = guild.id
     guild_name = guild.name
@@ -86,7 +86,7 @@ def plot_top_games(guild, top_games, days, granularity, game = None):
 
 # Функция для создания embed
 def top_games_create_embed(top_games, days, granularity, guild):
-    conn = sqlite3.connect(os.path.join("DataBase", "game_activities.db"))
+    conn = sqlite3.connect(os.path.join("Data", "game_activities.db"))
     c = conn.cursor()
 
     guild_id = guild.id
@@ -117,7 +117,7 @@ def top_games_create_embed(top_games, days, granularity, guild):
     return embed
 
 def popularity_games_create_embed(game, days, granularity, guild):
-    conn = sqlite3.connect(os.path.join("DataBase", "game_activities.db"))
+    conn = sqlite3.connect(os.path.join("Data", "game_activities.db"))
     c = conn.cursor()
 
     guild_id = guild.id
