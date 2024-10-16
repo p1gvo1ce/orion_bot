@@ -14,7 +14,7 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 logger = logging.getLogger('discord')
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 
 log_dir = 'logs'
 if not os.path.exists(log_dir):
@@ -31,7 +31,7 @@ class CSVHandler(logging.Handler):
         with open(self.filename, mode='a', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             if not self.file_exists:
-                writer.writerow(['Timestamp', 'Level', 'Message'])  # Заголовки
+                writer.writerow(['Timestamp', 'Level', 'Message'])
                 self.file_exists = True
             writer.writerow([record.asctime, record.levelname, log_entry])
 
@@ -68,22 +68,18 @@ def decode_misencoded_string(input_string: str) -> str:
 
 async def extract_fields(readable_data: str, event_type: str, guild) -> str:
     try:
-        # Убедитесь, что readable_data — это строка
         if isinstance(readable_data, str):
             data_dict = json.loads(readable_data.replace("'", "\""))
         else:
             return "Invalid data format: expected a string."
 
-        # Проверка структуры словаря
         if not isinstance(data_dict, dict):
             return "Decoded data is not a dictionary."
 
-        # Обработка данных в зависимости от типа события
         if event_type == "new_message":
             channel = data_dict['message']['channel']
-            category = channel.get('category', None)  # Получаем category, если есть
+            category = channel.get('category', None)
 
-            # category_id должен быть просто category, если это строка
             category_id = category if isinstance(category, str) else None
             channel_id = channel['id']
             author_id = data_dict['message']['author']['id']
@@ -138,13 +134,10 @@ async def extract_fields(readable_data: str, event_type: str, guild) -> str:
 
 def parse_time(time_str: str, default_days_ago: int = 365) -> str:
     if time_str:
-        # Парсим время
         parsed_time = dateparser.parse(time_str)
         if parsed_time:
-            # Преобразуем в UTC
             utc_time = parsed_time.astimezone(timezone.utc)
             return utc_time.strftime("%Y-%m-%d %H:%M:%S")
 
-    # Если парсинг не удался, возвращаем дату по умолчанию в UTC
     default_time = datetime.now(timezone.utc) - timedelta(days=default_days_ago)
     return default_time.strftime("%Y-%m-%d %H:%M:%S")

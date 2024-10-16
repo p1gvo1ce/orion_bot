@@ -12,7 +12,7 @@ bot = get_bot()
 
 invitations = {}
 
-async def start():
+async def bot_start():
     print(f'Logged in as {bot.user.name}')
     await bot.tree.sync()
 
@@ -45,13 +45,11 @@ async def join_from_invite(member):
         print(f'{member.name} joined via invitation {invite_code}, invited by {inviter.name}.')
     else:
         print(f'{member.name} joined without being invited by any other member.')
-
-    # Обновляем информацию о приглашениях
     invitations[guild.id] = invites_after
 
 async def greetings_delete_greetings(message):
-    if message.reference and await read_from_guild_settings_db(message.guild.id, 'removing_greetings')[0] =='on':
-        delay = int(await read_from_guild_settings_db(message.guild.id, 'removing_greetings_delay')[0])
+    if message.reference and (await read_from_guild_settings_db(message.guild.id, 'removing_greetings'))[0] == 'on':
+        delay = int((await read_from_guild_settings_db(message.guild.id, 'removing_greetings_delay'))[0])
         original_message = await message.channel.fetch_message(message.reference.message_id)
         if original_message.type == discord.MessageType.new_member and original_message.author in message.guild.members:
             await asyncio.sleep(delay)

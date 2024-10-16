@@ -149,42 +149,35 @@ async def language(interaction: discord.Interaction, mode: str, delay: int):
             )
 
 async def check_and_assign_roles(guild, top_games):
-    # Проверка каждой игры из топа
     for game in top_games:
         game_name = game[0]
-        role_name = game_name  # Используем имя игры как имя роли
+        role_name = game_name
 
-        # Проверяем, существует ли такая роль
         role = discord.utils.get(guild.roles, name=role_name)
 
-        # Если роли нет, создаём её с рандомным цветом
         if role is None:
             random_color = random.randint(0, 0xFFFFFF)
             role = await guild.create_role(name=role_name, color=discord.Color(random_color))
-            await add_game_in_game_roles_channel({role}, guild)  # Отправляем роль в специальный канал
+            await add_game_in_game_roles_channel({role}, guild)
 
 # Создание ролей для X популярных игр на сервере
 @bot.tree.command(name="create_top_games_roles", description="[admin] create roles for top games.")
 @app_commands.describe(top_count="Количество топ игр для создания ролей (например, топ 5)")
 @app_commands.checks.has_permissions(administrator=True)
 async def create_top_games_roles(interaction: discord.Interaction, top_count: int):
-    await interaction.response.defer()  # Отложенный ответ
+    await interaction.response.defer()
 
     guild = interaction.guild
 
-    # Получаем топ игр за последние 30 дней с гранулярностью "день"
     top_games = get_top_games(guild.id, 30, 'day')
 
-    # Если нет данных о топ играх
     if not top_games:
         await interaction.followup.send("Нет данных о топ играх за указанный период.", ephemeral=True)
         return
 
-    # Оставляем только top_count самых популярных игр
     top_games = top_games[:top_count]
 
     try:
-        # Проверяем и создаем роли для топ игр
         await check_and_assign_roles(guild, top_games)
 
         embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))

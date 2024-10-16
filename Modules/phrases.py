@@ -328,30 +328,6 @@ If this is not possible for some activity, then you need to contact the owners (
     'input': {
         'ru': 'ввод',
         'en': 'input'
-    },
-    '': {
-        'ru': '',
-        'en': ''
-    },
-    '': {
-        'ru': '',
-        'en': ''
-    },
-    '': {
-        'ru': '',
-        'en': ''
-    },
-    '': {
-        'ru': '',
-        'en': ''
-    },
-    '': {
-        'ru': '',
-        'en': ''
-    },
-    '': {
-        'ru': '',
-        'en': ''
     }
 }
 

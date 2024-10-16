@@ -15,6 +15,11 @@ Implemented functionality:
 - Automatically creating roles from top X activities in the guild
 - User can set their own name for temporary channels (global setting)
 - Ability for user to disable automatic updating of their game roles from Discord activity status
+- Logging system:
+  - getting logs using command by search words/values
+  - editing messages
+  - deleting messages
+  - sending messages
 
 In development:
 - Creating a system for logging events on the server (
@@ -25,8 +30,6 @@ In development:
   - creating channels
   - changing channels
   - deleting channels
-  - editing messages
-  - deleting messages
   - connecting to voice channels
   - disconnecting from voice channels
   - switching to other voice channels

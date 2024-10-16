@@ -11,28 +11,28 @@ from Modules.commands import (create_party_search_channel, game_popularity_chart
                               get_logs)
 from Modules.voice_channels_control import find_party_controller
 from Modules.role_control import game_role_reaction_add, game_role_reaction_remove
-from Modules.events import start, join_from_invite, greetings_delete_greetings, start_copy_logs_to_analytics
+from Modules.events import bot_start, join_from_invite, greetings_delete_greetings, start_copy_logs_to_analytics
 from Modules.logger import log_new_message, log_edited_message, log_deleted_message
 
 tracemalloc.start()
 
 listeners = {
-    'on_ready': 'start',
-    'on_member_join': 'join_from_invite',
-    'on_voice_state_update': 'find_party_controller',
-    'on_raw_reaction_add': 'game_role_reaction_add',
-    'on_raw_reaction_remove': 'game_role_reaction_remove',
-    'on_message': 'greetings_delete_greetings',
-    'on_message':'log_new_message',
-    'on_message_edit':'log_edited_message',
-    'on_message_delete':'log_deleted_message',
-    'on_ready':'start_copy_logs_to_analytics'
+    'on_ready': ['bot_start', 'start_copy_logs_to_analytics'],
+    'on_member_join': ['join_from_invite'],
+    'on_voice_state_update': ['find_party_controller'],
+    'on_raw_reaction_add': ['game_role_reaction_add'],
+    'on_raw_reaction_remove': ['game_role_reaction_remove'],
+    'on_message': ['greetings_delete_greetings', 'log_new_message'],
+    'on_message_edit': ['log_edited_message'],
+    'on_message_delete': ['log_deleted_message']
 }
-for event_type, handler in listeners.items():
-    bot.add_listener(globals()[handler], event_type)
 
-async def register_commands(bot):
-    await bot.tree.sync()
+for event_type, handlers in listeners.items():
+    if isinstance(handlers, list):
+        for handler in handlers:
+            bot.add_listener(globals()[handler], event_type)
+    else:
+        bot.add_listener(globals()[handlers], event_type)
 
 async def run_bot(token, conn):
     retry_count = 0

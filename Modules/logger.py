@@ -12,17 +12,13 @@ async def log_new_message(message):
     guild_id = message.guild.id
     is_member = isinstance(message.author, discord.Member)
 
-    # Инициализация переменной для времени
-    formatted_time = datetime.utcnow().isoformat()  # По умолчанию текущее время в UTC
+    formatted_time = datetime.utcnow().isoformat()
 
-    # Проверяем, включено ли логирование
     logging_status = await read_from_guild_settings_db(guild_id, "logging_system")
     if logging_status and logging_status[0] == 'on':
-        # Получаем ID канала для логирования
         log_channel_ids = await read_from_guild_settings_db(guild_id, "log_channel_id")
         log_channel_ids = [clean_channel_id(id_str) for id_str in log_channel_ids]
 
-        # Получаем смещение UTC
         utc_offset_data = await read_from_guild_settings_db(guild_id, "utc_time_offset")
         utc_offset = int(utc_offset_data[0]) if utc_offset_data else 0
 
@@ -45,7 +41,6 @@ async def log_new_message(message):
                     embed.description = description
                     await log_channel.send(embed=embed)
 
-    # Логируем в базу данных
     data = {
         "message": {
             "activity": str(message.activity),
@@ -76,28 +71,23 @@ async def log_new_message(message):
 
 
 async def log_deleted_message(message):
-    # Игнорируем сообщения, отправленные ботом
     if message.author.bot:
         return
 
     guild_id = message.guild.id
-    formatted_time = datetime.utcnow().isoformat()  # По умолчанию текущее время в UTC
+    formatted_time = datetime.utcnow().isoformat()
 
-    # Проверяем, включено ли логирование
     logging_status = await read_from_guild_settings_db(guild_id, "logging_system")
     if logging_status and logging_status[0] == 'on':
-        # Получаем ID канала для логирования
         log_channel_ids = await read_from_guild_settings_db(guild_id, "log_channel_id")
         log_channel_ids = [clean_channel_id(id_str) for id_str in log_channel_ids]
 
-        # Получаем смещение UTC
         utc_offset_data = await read_from_guild_settings_db(guild_id, "utc_time_offset")
         utc_offset = int(utc_offset_data[0]) if utc_offset_data else 0
 
         utc_time = datetime.utcnow() + timedelta(hours=utc_offset)
         formatted_time = utc_time.isoformat()
 
-        # Если каналы для логирования найдены
         if log_channel_ids:
             for log_channel_id in log_channel_ids:
                 log_channel = message.guild.get_channel(log_channel_id)
@@ -114,13 +104,12 @@ async def log_deleted_message(message):
                     embed.description = description
                     await log_channel.send(embed=embed)
 
-    # Логируем в базу данных
     data = {
         "message": {
             "id": str(message.id),
             "channel_id": str(message.channel.id),
             "content": str(message.content),
-            "deleted_at": str(formatted_time),  # Используем отформатированное время
+            "deleted_at": str(formatted_time),
             "author": {
                 "id": str(message.author.id),
                 "name": str(message.author.name),
@@ -138,35 +127,29 @@ async def log_deleted_message(message):
 
 
 async def log_edited_message(before, after):
-    # Игнорируем изменения сообщений, отправленных ботом
     if after.author.bot:
         return
     guild_id = after.guild.id
     is_member = isinstance(after.author, discord.Member)
 
-    # Инициализация переменной для времени
-    formatted_time = datetime.utcnow().isoformat()  # По умолчанию текущее время в UTC
+    formatted_time = datetime.utcnow().isoformat()
 
-    # Проверяем, включено ли логирование
     logging_status = await read_from_guild_settings_db(guild_id, "logging_system")
     if logging_status and logging_status[0] == 'on':
-        # Получаем ID канала для логирования
         log_channel_ids = await read_from_guild_settings_db(guild_id, "log_channel_id")
         log_channel_ids = [clean_channel_id(id_str) for id_str in log_channel_ids]
 
-        # Получаем смещение UTC
         utc_offset_data = await read_from_guild_settings_db(guild_id, "utc_time_offset")
         utc_offset = int(utc_offset_data[0]) if utc_offset_data else 0
 
         utc_time = datetime.utcnow() + timedelta(hours=utc_offset)
         formatted_time = utc_time.isoformat()
 
-        # Если каналы для логирования найдены
         if log_channel_ids:
             for log_channel_id in log_channel_ids:
                 log_channel = after.guild.get_channel(log_channel_id)
                 if log_channel:
-                    embed = discord.Embed(color=discord.Color.from_str("#FFA500"))  # Цвет для отредактированных сообщений
+                    embed = discord.Embed(color=discord.Color.from_str("#FFA500"))
                     description = (
                         f"**{await get_phrase('Message Edited', after.guild)}**\n"
                         f"**{await get_phrase('Author', after.guild)}**: {after.author.name}#{after.author.discriminator} "
@@ -179,13 +162,12 @@ async def log_edited_message(before, after):
                     embed.description = description
                     await log_channel.send(embed=embed)
 
-    # Логируем в базу данных
     data = {
         "message": {
             "id": str(after.id),
             "content_before": str(before.content),
             "content_after": str(after.content),
-            "edited_at": str(formatted_time),  # Используем отформатированное время
+            "edited_at": str(formatted_time),
         },
         "author": {
             "id": str(after.author.id),

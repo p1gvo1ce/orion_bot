@@ -398,10 +398,6 @@ async def read_logs_from_analytics(guild_id, event_type=None, start_time=None, e
         async with conn.execute(query, params) as cursor:
             logs = await cursor.fetchall()
 
-    if not logs:
-        print("Нет логов для указанных параметров:")
-        print(f"start_time: {start_time}, end_time: {end_time}, event_type: {event_type}, search_str: {search_str}")
-
     parsed_logs = []
     for log in logs:
         date_time, event_type, data = log
@@ -415,8 +411,7 @@ async def read_logs_from_analytics(guild_id, event_type=None, start_time=None, e
                 "data": json_data
             })
         except json.JSONDecodeError as e:
-            print(f"Ошибка декодирования JSON для данных: {data}")
-            print(f"Ошибка: {e}")
+            print(e)
 
     return parsed_logs
 
@@ -459,5 +454,5 @@ async def copy_logs_to_analytics(guilds):
             except Exception as e:
                 print(f"Error copying logs to analytics: {e}")
 
-            print('DB COPIED')
-        await asyncio.sleep(300)  # Ждем 10 минут
+            print('DB COPIED ' + guild.name)
+        await asyncio.sleep(300)
