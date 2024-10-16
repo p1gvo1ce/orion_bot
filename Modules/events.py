@@ -3,7 +3,7 @@ import asyncio
 
 from Modules.buttons import update_buttons_on_start
 from Modules.activity_monitoring import periodic_check_for_guilds
-from Modules.db_control import read_from_guild_settings_db
+from Modules.db_control import read_from_guild_settings_db, copy_logs_to_analytics
 from Modules.voice_channels_control import check_and_remove_nonexistent_channels
 
 from utils import get_bot
@@ -21,6 +21,9 @@ async def start():
     for guild in bot.guilds:
         invitations[guild.id] = await guild.invites()
     await periodic_check_for_guilds(bot)
+
+async def start_copy_logs_to_analytics():
+    await copy_logs_to_analytics(bot.guilds)
 
 async def join_from_invite(member):
     inviter = ''

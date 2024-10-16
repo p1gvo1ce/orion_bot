@@ -232,6 +232,102 @@ If this is not possible for some activity, then you need to contact the owners (
     'Game role update disabled': {
         'ru': 'Выключено обновление игровых ролей',
         'en': 'Game role update disabled'
+    },
+    'New Message': {
+        'ru': 'Новое сообщение',
+        'en': 'New Message'
+    },
+    'Author': {
+        'ru': 'Автор',
+        'en': 'Author'
+    },
+    'Content': {
+        'ru': 'Содержание',
+        'en': 'Content'
+    },
+    'Channel': {
+        'ru': 'Канал',
+        'en': 'Channel'
+    },
+    'Created At': {
+        'ru': 'Создано',
+        'en': 'Created At'
+    },
+    'Deleted Message': {
+        'ru': 'Удалено сообщение',
+        'en': 'Deleted Message'
+    },
+    'Deleted At': {
+        'ru': 'Удалено',
+        'en': 'Deleted At'
+    },
+    'Message Edited': {
+        'ru': 'Сообщение отредактировано',
+        'en': 'Message Edited'
+    },
+    'Content Before': {
+        'ru': 'Содержание До',
+        'en': 'Content Before'
+    },
+    'Content After': {
+        'ru': 'Содержание После',
+        'en': 'Content After'
+    },
+    'Event Type': {
+        'ru': 'Событие',
+        'en': 'Event Type'
+    },
+    'Logged At': {
+        'ru': 'Время записи',
+        'en': 'Logged At'
+    },
+    'Data': {
+        'ru': 'Данные',
+        'en': 'Data'
+    },
+    'Category': {
+        'ru': 'Категория',
+        'en': 'Category'
+    },
+    'Edited At': {
+        'ru': 'Отредактировано',
+        'en': 'Edited At'
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
     }
 }
 

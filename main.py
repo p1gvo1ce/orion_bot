@@ -7,10 +7,12 @@ bot = get_bot()
 from Modules.db_control import (check_and_initialize_main_db, get_token_from_db, request_token)
 from Modules.buttons import update_buttons_on_start
 from Modules.commands import (create_party_search_channel, game_popularity_chart, top_games_command, language,
-                              create_top_games_roles, set_voice_name, dont_update_roles)
+                              create_top_games_roles, set_voice_name, dont_update_roles, set_utc_time, logging_system,
+                              get_logs)
 from Modules.voice_channels_control import find_party_controller
 from Modules.role_control import game_role_reaction_add, game_role_reaction_remove
-from Modules.events import start, join_from_invite, greetings_delete_greetings
+from Modules.events import start, join_from_invite, greetings_delete_greetings, start_copy_logs_to_analytics
+from Modules.logger import log_new_message, log_edited_message, log_deleted_message
 
 tracemalloc.start()
 
@@ -20,7 +22,11 @@ listeners = {
     'on_voice_state_update': 'find_party_controller',
     'on_raw_reaction_add': 'game_role_reaction_add',
     'on_raw_reaction_remove': 'game_role_reaction_remove',
-    'on_message': 'greetings_delete_greetings'
+    'on_message': 'greetings_delete_greetings',
+    'on_message':'log_new_message',
+    'on_message_edit':'log_edited_message',
+    'on_message_delete':'log_deleted_message',
+    'on_ready':'start_copy_logs_to_analytics'
 }
 for event_type, handler in listeners.items():
     bot.add_listener(globals()[handler], event_type)

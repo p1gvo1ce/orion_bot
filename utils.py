@@ -3,7 +3,10 @@ from discord.ext import commands
 import logging
 import csv
 import os
+import json
 from datetime import datetime
+
+from Modules.phrases import get_phrase
 
 intents = discord.Intents.all()
 intents.message_content = True
@@ -54,3 +57,81 @@ def get_logger():
     return logger
 def clean_channel_id(channel_id_str):
     return int(channel_id_str.replace("id", ""))
+
+def decode_misencoded_string(input_string: str) -> str:
+    try:
+        return input_string.encode('latin1').decode('utf-8')
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return input_string
+
+
+async def extract_fields(readable_data: str, event_type: str, guild) -> str:
+    try:
+        print(event_type)
+        # Убедитесь, что readable_data — это строка
+        if isinstance(readable_data, str):
+            print("Input is a string")
+            data_dict = json.loads(readable_data.replace("'", "\""))
+        else:
+            return "Invalid data format: expected a string."
+
+        # Проверка структуры словаря
+        if not isinstance(data_dict, dict):
+            return "Decoded data is not a dictionary."
+
+        # Обработка данных в зависимости от типа события
+        if event_type == "new_message":
+            channel = data_dict['message']['channel']
+            category = channel.get('category', None)  # Получаем category, если есть
+
+            # category_id должен быть просто category, если это строка
+            category_id = category if isinstance(category, str) else None
+            channel_id = channel['id']
+            author_id = data_dict['message']['author']['id']
+            content = data_dict['message']['content'].replace("\\n", "\n")
+            created_at = data_dict['message']['created_at']
+
+            return (f"**{await get_phrase("Category", guild)}**: <#{category_id}>\n"
+                    f"**{await get_phrase("Channel", guild)}**: <#{channel_id}>\n"
+                    f"**{await get_phrase("Author", guild)}**: <@{author_id}>\n"
+                    f"**{await get_phrase("Created At", guild)}**: {created_at}\n"
+                    f"**{await get_phrase("Content", guild)}**:\n```{content}```")
+
+        elif event_type == "edited_message":
+            channel = data_dict['channel']
+            channel_id = channel['id']
+            author_id = data_dict['author']['id']
+            author_name = data_dict['author']['name']
+            content_before = data_dict['content_before'].replace("\\n", "\n")
+            content_after = data_dict['content_after'].replace("\\n", "\n")
+            edited_at = data_dict['edited_at']
+
+            return (f"**{await get_phrase("Channel", guild)}**: <#{channel_id}>\n"
+                    f"**{await get_phrase("Author", guild)}**: <@{author_id}> (Name: {author_name})\n"
+                    f"**{await get_phrase("Edited At", guild)}**: {edited_at}\n"
+                    f"**{await get_phrase("Content Before", guild)}**:\n```{content_before}```\n"
+                    f"**{await get_phrase("Content After", guild)}**:\n```{content_after}```")
+
+        elif event_type == "deleted_message":
+            message = data_dict['message']
+            channel_id = message['channel']['id']
+            author_id = message['author']['id']
+            author_name = message['author']['name']
+            content = message['content'].replace("\\n", "\n")
+            deleted_at = message['deleted_at']
+
+            return (f"**{await get_phrase("Channel", guild)}**: <#{channel_id}>\n"
+                    f"**{await get_phrase("Author", guild)}**: <@{author_id}> (Name: {author_name})\n"
+                    f"**{await get_phrase("Deleted At", guild)}**: {deleted_at}\n"
+                    f"**{await get_phrase("Content", guild)}**:\n```{content}```")
+
+        elif event_type == "another_event_type":
+            return (f"Some other details for event type {event_type}")
+
+        else:
+            return "Event type not recognized."
+
+    except json.JSONDecodeError:
+        return "Failed to decode readable_data. Ensure it is in the correct format."
+    except Exception as e:
+        return f"An error occurred: {str(e)}"

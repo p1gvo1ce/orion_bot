@@ -299,32 +299,36 @@ async def delete_member_data_from_db(member, option):
         cursor = await conn.execute("DELETE FROM settings WHERE member_id = ? AND option = ?", (member.id, option))
         await conn.commit()
 
+
 async def check_and_initialize_logs_db(guild_id, db_type="buffer"):
     if db_type == "buffer":
         db_path = os.path.join("Data", "logs.db")
     elif db_type == "analytics":
-        db_path = os.path.join("Data", "analytics.db")
+        db_path = os.path.join("Data", "analytics.db")  # Указанный путь для аналитической БД
     else:
         raise ValueError("Неверный тип базы данных. Используйте 'buffer' или 'analytics'.")
+    if not os.path.exists("Data"):
+        os.makedirs("Data")  # Создаем папку, если её нет
 
-    async with aiosqlite.connect(db_path) as conn:
-        table_name = f"guild{guild_id}"
-        await conn.execute(f'''
-            CREATE TABLE IF NOT EXISTS {table_name} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date_time TEXT,
-                event_type TEXT,
-                data TEXT
-            )
-        ''')
-        await conn.commit()
+    conn = await aiosqlite.connect(db_path)
+
+    table_name = f"guild{guild_id}"
+    await conn.execute(f'''
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date_time TEXT,
+            event_type TEXT,
+            data TEXT
+        )
+    ''')
+
     return conn
 
 
 async def log_event_to_db(guild_id, event_type, data):
-    conn = await check_and_initialize_logs_db(guild_id, db_type="buffer")
-    async with conn:
-        data_json = json.dumps(data)
+    db_path = os.path.join("Data", "logs.db")
+    async with aiosqlite.connect(db_path) as conn:
+        data_json = json.dumps(data, ensure_ascii=False)
         current_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
         table_name = f"guild{guild_id}"
@@ -359,67 +363,97 @@ async def copy_logs_to_analytics(guild_id):
         await analytics_conn.commit()
 
 
-async def read_logs_from_analytics(guild_id, event_type=None, start_time=None, end_time=None, search_str=None):
-    conn = await check_and_initialize_logs_db(guild_id, db_type="analytics")
-    table_name = f"guild{guild_id}"
 
-    query = f"SELECT date_time, event_type, data FROM {table_name} WHERE 1=1"
-    params = []
 
-    if event_type:
-        query += " AND event_type = ?"
-        params.append(event_type)
+async def read_logs_from_analytics(guild_id, event_type=None, start_time=None, end_time=None, search_str=None,
+                                   operator='AND'):
+    analytics_db_path = os.path.join("Data", "analytics.db")
 
-    if start_time:
-        query += " AND date_time >= ?"
-        params.append(start_time)
-    if end_time:
-        query += " AND date_time <= ?"
-        params.append(end_time)
+    async with aiosqlite.connect(analytics_db_path) as conn:
+        table_name = f"guild{guild_id}"
+        query = f"SELECT date_time, event_type, data FROM {table_name} WHERE 1=1"
+        params = []
 
-    if search_str:
-        query += " AND data LIKE ?"
-        params.append(f"%{search_str}%")
+        if event_type:
+            query += " AND event_type = ?"
+            params.append(event_type)
 
-    async with conn.execute(query, params) as cursor:
-        logs = await cursor.fetchall()
+        if start_time:
+            query += " AND date_time >= ?"
+            params.append(start_time)
+        if end_time:
+            query += " AND date_time <= ?"
+            params.append(end_time)
 
-    await conn.close()
+        if search_str:
+            search_terms = [term.strip() for term in search_str.split(',')]
+            if operator.upper() == 'AND':
+                like_conditions = " AND ".join(["data LIKE ?" for _ in search_terms])
+            else:
+                like_conditions = " OR ".join(["data LIKE ?" for _ in search_terms])
 
-    parsed_logs = [
-        {
-            "date_time": log[0],
-            "event_type": log[1],
-            "data": json.loads(log[2])
-        } for log in logs
-    ]
+            query += f" AND ({like_conditions})"
+            params.extend([f"%{term}%" for term in search_terms])
+
+        async with conn.execute(query, params) as cursor:
+            logs = await cursor.fetchall()
+
+    parsed_logs = []
+    for log in logs:
+        date_time, event_type, data = log
+        try:
+            # Применяем декодирование к данным
+            decoded_data = decode_misencoded_string(data)
+            json_data = decoded_data  # Если данные уже в JSON, просто используем их
+
+            parsed_logs.append({
+                "date_time": date_time,
+                "event_type": event_type,
+                "data": json_data
+            })
+        except json.JSONDecodeError as e:
+            # Если ошибка, выводим данные для отладки
+            print(f"Ошибка декодирования JSON для данных: {data}")
+            print(f"Ошибка: {e}")
 
     return parsed_logs
 
+def decode_misencoded_string(input_string: str) -> str:
+    try:
+        return input_string.encode('latin1').decode('utf-8')
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return input_string
 
-async def copy_logs_to_analytics(guild_id):
+async def copy_logs_to_analytics(guilds):
     buffer_db_path = os.path.join("Data", "logs.db")
     analytics_db_path = os.path.join("Data", "analytics.db")
-
     while True:
-        async with aiosqlite.connect(buffer_db_path) as buffer_conn, aiosqlite.connect(
-                analytics_db_path) as analytics_conn:
-            buffer_cursor = await buffer_conn.cursor()
-            analytics_cursor = await analytics_conn.cursor()
+        for guild in guilds:
+            guild_id = guild.id
+            try:
+                await check_and_initialize_logs_db(guild_id, db_type="analytics")
+                await check_and_initialize_logs_db(guild_id, db_type="buffer")
+                async with aiosqlite.connect(buffer_db_path) as buffer_conn, aiosqlite.connect(
+                        analytics_db_path) as analytics_conn:
+                    async with buffer_conn.cursor() as buffer_cursor, analytics_conn.cursor() as analytics_cursor:
 
-            table_name = f"guild{guild_id}"
-            await buffer_cursor.execute(f"SELECT date_time, event_type, data FROM {table_name}")
-            logs_to_copy = await buffer_cursor.fetchall()
+                        table_name = f"guild{guild_id}"
+                        await buffer_cursor.execute(f"SELECT date_time, event_type, data FROM {table_name}")
+                        logs_to_copy = await buffer_cursor.fetchall()
 
-            if logs_to_copy:
-                await analytics_cursor.executemany(f'''
-                    INSERT INTO {table_name} (date_time, event_type, data)
-                    VALUES (?, ?, ?)
-                ''', logs_to_copy)
+                        if logs_to_copy:
+                            await analytics_cursor.executemany(f'''
+                                INSERT INTO {table_name} (date_time, event_type, data)
+                                VALUES (?, ?, ?)
+                            ''', logs_to_copy)
 
-                await buffer_cursor.execute(f"DELETE FROM {table_name}")
+                            await buffer_cursor.execute(f"DELETE FROM {table_name}")
 
-            await buffer_conn.commit()
-            await analytics_conn.commit()
+                        await buffer_conn.commit()
+                        await analytics_conn.commit()
 
-        await asyncio.sleep(600)
+            except Exception as e:
+                print(f"Error copying logs to analytics: {e}")
+
+            print('DB COPIED')
+        await asyncio.sleep(300)  # Ждем 10 минут
