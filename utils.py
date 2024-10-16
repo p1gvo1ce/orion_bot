@@ -4,7 +4,8 @@ import logging
 import csv
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+import dateparser
 
 from Modules.phrases import get_phrase
 
@@ -133,3 +134,17 @@ async def extract_fields(readable_data: str, event_type: str, guild) -> str:
         return "Failed to decode readable_data. Ensure it is in the correct format."
     except Exception as e:
         return f"An error occurred: {str(e)}"
+
+
+def parse_time(time_str: str, default_days_ago: int = 365) -> str:
+    if time_str:
+        # Парсим время
+        parsed_time = dateparser.parse(time_str)
+        if parsed_time:
+            # Преобразуем в UTC
+            utc_time = parsed_time.astimezone(timezone.utc)
+            return utc_time.strftime("%Y-%m-%d %H:%M:%S")
+
+    # Если парсинг не удался, возвращаем дату по умолчанию в UTC
+    default_time = datetime.now(timezone.utc) - timedelta(days=default_days_ago)
+    return default_time.strftime("%Y-%m-%d %H:%M:%S")

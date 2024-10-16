@@ -365,8 +365,7 @@ async def copy_logs_to_analytics(guild_id):
 
 
 
-async def read_logs_from_analytics(guild_id, event_type=None, start_time=None, end_time=None, search_str=None,
-                                   operator='AND'):
+async def read_logs_from_analytics(guild_id, event_type=None, start_time=None, end_time=None, search_str=None, operator='AND'):
     analytics_db_path = os.path.join("Data", "analytics.db")
 
     async with aiosqlite.connect(analytics_db_path) as conn:
@@ -381,16 +380,17 @@ async def read_logs_from_analytics(guild_id, event_type=None, start_time=None, e
         if start_time:
             query += " AND date_time >= ?"
             params.append(start_time)
+
         if end_time:
             query += " AND date_time <= ?"
             params.append(end_time)
 
         if search_str:
-            search_terms = [term.strip().lower() for term in search_str.split(',')]  # Приводим к нижнему регистру
+            search_terms = [term.strip().lower() for term in search_str.split(',')]
             if operator.upper() == 'AND':
-                like_conditions = " AND ".join([f"LOWER(data) LIKE ?" for _ in search_terms])  # Используем LOWER
+                like_conditions = " AND ".join([f"LOWER(data) LIKE ?" for _ in search_terms])
             else:
-                like_conditions = " OR ".join([f"LOWER(data) LIKE ?" for _ in search_terms])  # Используем LOWER
+                like_conditions = " OR ".join([f"LOWER(data) LIKE ?" for _ in search_terms])
 
             query += f" AND ({like_conditions})"
             params.extend([f"%{term}%" for term in search_terms])
@@ -398,13 +398,16 @@ async def read_logs_from_analytics(guild_id, event_type=None, start_time=None, e
         async with conn.execute(query, params) as cursor:
             logs = await cursor.fetchall()
 
+    if not logs:
+        print("Нет логов для указанных параметров:")
+        print(f"start_time: {start_time}, end_time: {end_time}, event_type: {event_type}, search_str: {search_str}")
+
     parsed_logs = []
     for log in logs:
         date_time, event_type, data = log
         try:
-            # Применяем декодирование к данным
             decoded_data = decode_misencoded_string(data)
-            json_data = decoded_data  # Если данные уже в JSON, просто используем их
+            json_data = decoded_data
 
             parsed_logs.append({
                 "date_time": date_time,
@@ -412,11 +415,11 @@ async def read_logs_from_analytics(guild_id, event_type=None, start_time=None, e
                 "data": json_data
             })
         except json.JSONDecodeError as e:
-            # Если ошибка, выводим данные для отладки
             print(f"Ошибка декодирования JSON для данных: {data}")
             print(f"Ошибка: {e}")
 
     return parsed_logs
+
 
 
 def decode_misencoded_string(input_string: str) -> str:

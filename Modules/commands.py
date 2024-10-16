@@ -12,7 +12,7 @@ from Modules.phrases import get_phrase
 from Modules.analytics import top_games_create_embed, plot_top_games, popularity_games_create_embed
 from Modules.buttons import FindPartyWithoutActivity
 from Modules.text_channels_control import add_game_in_game_roles_channel
-from utils import get_bot, clean_channel_id, extract_fields
+from utils import get_bot, clean_channel_id, extract_fields, parse_time
 
 bot = get_bot()
 
@@ -291,17 +291,23 @@ async def set_utc_time(interaction: discord.Interaction, utc_offset: int):
 @app_commands.checks.has_permissions(administrator=True)
 async def get_logs(interaction: discord.Interaction, event_type: str = None, start_time: str = None,
                    end_time: str = None, search_str: str = None, operator: str = 'AND'):
+    ephemeral_response = await interaction.response.send_message("Loading...", ephemeral=True)
     guild_id = interaction.guild.id
-
+    start_time_str = start_time
+    end_time_str = end_time
     # Проверяем, включено ли логирование
     logging_status = await read_from_guild_settings_db(guild_id, "logging_system")
     if not (logging_status and logging_status[0] == 'on'):
-        await interaction.response.send_message("Logging system is turned off.", ephemeral=True)
+        await interaction.edit_original_response(content = "Logging system is turned off.")
+        #await interaction.response.send_message("Logging system is turned off.", ephemeral=True)
         return
-    await interaction.response.send_message("Loading...", ephemeral=True)
     # Получаем смещение UTC
     utc_offset_data = await read_from_guild_settings_db(guild_id, "utc_time_offset")
     utc_offset = int(utc_offset_data[0]) if utc_offset_data else 0
+
+    # Парсим даты с помощью функции parse_time
+    start_time = parse_time(start_time, default_days_ago=365)
+    end_time = parse_time(end_time, default_days_ago=0)  # По умолчанию сейчас
 
     # Получаем логи
     logs = await read_logs_from_analytics(
@@ -312,18 +318,30 @@ async def get_logs(interaction: discord.Interaction, event_type: str = None, sta
         search_str=search_str,
         operator=operator
     )
-
+    date_format = "%Y-%m-%d %H:%M:%S"
+    start_time = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+    end_time = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
     if not logs:
-        await interaction.response.send_message("No logs found for the specified filters.", ephemeral=True)
+        await interaction.edit_original_response(
+            content=f"{await get_phrase('No logs found for the specified filters', interaction.guild)}.\n"
+                    f"{await get_phrase('start time', interaction.guild)} {start_time + timedelta(hours=utc_offset):{date_format}}\n"
+                    f"{await get_phrase('input', interaction.guild)}: {start_time_str}\n"
+                    f"{await get_phrase('end time', interaction.guild)} {end_time + timedelta(hours=utc_offset):{date_format}}\n"
+                    f"{await get_phrase('input', interaction.guild)}: {end_time_str}\n"
+                    f"{await get_phrase('search', interaction.guild)} {search_str}"
+        )
         return
+    await interaction.edit_original_response(content="Loading...")
 
-    # Отправляем начальное сообщение
-    initial_message = await interaction.channel.send(f"Fetching logs. Vars:\n"
-                                                     f"event_type {event_type}\n"
-                                                     f"start_time {start_time}\n"
-                                                     f"end_time {end_time}\n"
-                                                     f"search_str {search_str}\n"
-                                                     f"operator {operator}\n")
+    initial_message = await interaction.channel.send(f"{await get_phrase('Fetching logs', interaction.guild)}. "
+                                                     f"{await get_phrase('Vars', interaction.guild)}:\n"
+                                                     f"{await get_phrase('event type', interaction.guild)} {event_type}\n"
+                                                     f"{await get_phrase('start time', interaction.guild)} {start_time + timedelta(hours=utc_offset):{date_format}}\n"
+                                                     f"{await get_phrase('input', interaction.guild)}: {start_time_str}\n"
+                                                     f"{await get_phrase('end time', interaction.guild)} {end_time + timedelta(hours=utc_offset):{date_format}}\n"
+                                                     f"{await get_phrase('input', interaction.guild)}: {end_time_str}\n"
+                                                     f"{await get_phrase('search', interaction.guild)} {search_str}\n"
+                                                     f"{await get_phrase('operator', interaction.guild)} {operator}\n")
 
     # Создаем ветку (thread)
     thread = await initial_message.create_thread(name="Logs Thread", auto_archive_duration=60)
@@ -349,4 +367,4 @@ async def get_logs(interaction: discord.Interaction, event_type: str = None, sta
         await thread.send(embed=embed)
 
     # Обновляем начальное сообщение только один раз после всех логов
-    await initial_message.edit(content=initial_message.content.replace("Fetching logs.", "Done"))
+    await interaction.edit_original_response(content="Done.")

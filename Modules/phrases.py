@@ -293,17 +293,41 @@ If this is not possible for some activity, then you need to contact the owners (
         'ru': 'Отредактировано',
         'en': 'Edited At'
     },
-    '': {
-        'ru': '',
-        'en': ''
+    'No logs found for the specified filters': {
+        'ru': 'Нет логов с указанными фильтрами',
+        'en': 'No logs found for the specified filters'
     },
-    '': {
-        'ru': '',
-        'en': ''
+    'start time': {
+        'ru': 'начало периода',
+        'en': 'start time'
     },
-    '': {
-        'ru': '',
-        'en': ''
+    'end time': {
+        'ru': 'конец периода',
+        'en': 'end time'
+    },
+    'search': {
+        'ru': 'поиск',
+        'en': 'search'
+    },
+    'Fetching logs': {
+        'ru': 'Извлечение логов',
+        'en': 'Fetching logs'
+    },
+    'Vars': {
+        'ru': 'Переменные',
+        'en': 'Vars'
+    },
+    'event type': {
+        'ru': 'тип события',
+        'en': 'event type'
+    },
+    'operator': {
+        'ru': 'оператор',
+        'en': 'operator'
+    },
+    'input': {
+        'ru': 'ввод',
+        'en': 'input'
     },
     '': {
         'ru': '',
