@@ -298,7 +298,7 @@ async def get_logs(interaction: discord.Interaction, event_type: str = None, sta
     if not (logging_status and logging_status[0] == 'on'):
         await interaction.response.send_message("Logging system is turned off.", ephemeral=True)
         return
-
+    await interaction.response.send_message("Loading...", ephemeral=True)
     # Получаем смещение UTC
     utc_offset_data = await read_from_guild_settings_db(guild_id, "utc_time_offset")
     utc_offset = int(utc_offset_data[0]) if utc_offset_data else 0
@@ -338,8 +338,6 @@ async def get_logs(interaction: discord.Interaction, event_type: str = None, sta
     for log in sorted(logs, key=lambda x: x['date_time']):
         log_time = datetime.fromisoformat(log["date_time"]) + timedelta(hours=utc_offset)
         formatted_time = log_time.strftime("%Y-%m-%d %H:%M:%S")
-        print(f"{type(log['data'])}"
-              f"{log['data']}")
         readable_data = await extract_fields(log['data'], log['event_type'], interaction.guild)
 
         description = (
@@ -352,4 +350,3 @@ async def get_logs(interaction: discord.Interaction, event_type: str = None, sta
 
     # Обновляем начальное сообщение только один раз после всех логов
     await initial_message.edit(content=initial_message.content.replace("Fetching logs.", "Done"))
-    await interaction.response.send_message("Done.", ephemeral=True)

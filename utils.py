@@ -67,10 +67,8 @@ def decode_misencoded_string(input_string: str) -> str:
 
 async def extract_fields(readable_data: str, event_type: str, guild) -> str:
     try:
-        print(event_type)
         # Убедитесь, что readable_data — это строка
         if isinstance(readable_data, str):
-            print("Input is a string")
             data_dict = json.loads(readable_data.replace("'", "\""))
         else:
             return "Invalid data format: expected a string."

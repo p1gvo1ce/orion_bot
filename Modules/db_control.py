@@ -386,11 +386,11 @@ async def read_logs_from_analytics(guild_id, event_type=None, start_time=None, e
             params.append(end_time)
 
         if search_str:
-            search_terms = [term.strip() for term in search_str.split(',')]
+            search_terms = [term.strip().lower() for term in search_str.split(',')]  # Приводим к нижнему регистру
             if operator.upper() == 'AND':
-                like_conditions = " AND ".join(["data LIKE ?" for _ in search_terms])
+                like_conditions = " AND ".join([f"LOWER(data) LIKE ?" for _ in search_terms])  # Используем LOWER
             else:
-                like_conditions = " OR ".join(["data LIKE ?" for _ in search_terms])
+                like_conditions = " OR ".join([f"LOWER(data) LIKE ?" for _ in search_terms])  # Используем LOWER
 
             query += f" AND ({like_conditions})"
             params.extend([f"%{term}%" for term in search_terms])
@@ -417,6 +417,7 @@ async def read_logs_from_analytics(guild_id, event_type=None, start_time=None, e
             print(f"Ошибка: {e}")
 
     return parsed_logs
+
 
 def decode_misencoded_string(input_string: str) -> str:
     try:
