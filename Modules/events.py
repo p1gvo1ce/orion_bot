@@ -47,8 +47,8 @@ async def join_from_invite(member):
     invitations[guild.id] = invites_after
 
 async def greetings_delete_greetings(message):
-    if message.reference and read_from_guild_settings_db(message.guild.id, 'removing_greetings')[0] =='on':
-        delay = int(read_from_guild_settings_db(message.guild.id, 'removing_greetings_delay')[0])
+    if message.reference and await read_from_guild_settings_db(message.guild.id, 'removing_greetings')[0] =='on':
+        delay = int(await read_from_guild_settings_db(message.guild.id, 'removing_greetings_delay')[0])
         original_message = await message.channel.fetch_message(message.reference.message_id)
         if original_message.type == discord.MessageType.new_member and original_message.author in message.guild.members:
             await asyncio.sleep(delay)

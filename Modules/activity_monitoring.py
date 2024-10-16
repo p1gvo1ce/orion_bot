@@ -29,7 +29,7 @@ async def check_all_members(guild, db_conn):
     roles = guild.roles
 
     for member in guild.members:
-        member_data = read_member_data_from_db(member, 'voice_channel_name')
+        member_data = await read_member_data_from_db(member, 'voice_channel_name')
         if member_data and member_data.get('data') == 'off':
             continue
         for activity in member.activities:
@@ -44,7 +44,7 @@ async def check_all_members(guild, db_conn):
                     }]
                 }
 
-                insert_activity(db_conn, guild.id, member_id, activity_name)
+                await insert_activity(db_conn, guild.id, member_id, activity_name)
 
                 role = discord.utils.get(roles, name=activity_name)
                 if role:
@@ -55,11 +55,11 @@ async def check_all_members(guild, db_conn):
 
 
 async def periodic_check_for_guilds(bot):
-    db_conn = check_and_initialize_activities_db()
+    db_conn = await check_and_initialize_activities_db()
     while True:
         server_names = []
         for guild in bot.guilds:
-            create_server_table(db_conn, guild.id)
+            await create_server_table(db_conn, guild.id)
             await check_all_members(guild, db_conn)
             server_names.append(guild.name)
         current_time = datetime.now().strftime('%Y.%m.%d %H.%M')

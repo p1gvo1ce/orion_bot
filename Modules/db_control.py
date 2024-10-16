@@ -1,93 +1,99 @@
 import os
 import sqlite3
+import aiosqlite
+import asyncio
 import json
 from datetime import datetime, timedelta, timezone
 
-def check_and_initialize_main_db():
+
+async def check_and_initialize_main_db():
     db_path = os.path.join("Data", "main.db")
+
     if not os.path.exists(db_path):
-        conn = sqlite3.connect(db_path)
-        c = conn.cursor()
-        c.execute('''CREATE TABLE tokens (id INTEGER PRIMARY KEY, token TEXT)''')
-        conn.commit()
+        async with aiosqlite.connect(db_path) as conn:
+            await conn.execute('''CREATE TABLE tokens (id INTEGER PRIMARY KEY, token TEXT)''')
+            await conn.commit()
     else:
-        conn = sqlite3.connect(db_path)
+        conn = await aiosqlite.connect(db_path)
+
     return conn
 
 
-def get_token_from_db(conn):
-    c = conn.cursor()
-    c.execute("SELECT token FROM tokens ORDER BY id DESC LIMIT 1")
-    result = c.fetchone()
-    if result:
-        return result[0]
-    else:
-        return None
+async def get_token_from_db(conn):
+    async with conn.execute("SELECT token FROM tokens ORDER BY id DESC LIMIT 1") as cursor:
+        result = await cursor.fetchone()
+        if result:
+            return result[0]
+        else:
+            return None
 
 
-def update_token_in_db(conn, token):
-    c = conn.cursor()
-    c.execute("INSERT INTO tokens (token) VALUES (?)", (token,))
-    conn.commit()
+async def update_token_in_db(conn, token):
+    await conn.execute("INSERT INTO tokens (token) VALUES (?)", (token,))
+    await conn.commit()
 
 
-def request_token(conn):
+async def request_token(conn):
     while True:
         token = input("Enter token: ").strip()
         if token:
-            update_token_in_db(conn, token)
+            await update_token_in_db(conn, token)
             print("Token saved")
             return token
 
 
-def check_and_initialize_activities_db():
+async def check_and_initialize_activities_db():
     db_path = os.path.join("Data", "game_activities.db")
     if not os.path.exists(db_path):
-        conn = sqlite3.connect(db_path)
-        c = conn.cursor()
+        async with aiosqlite.connect(db_path) as conn:
+            pass
     else:
-        conn = sqlite3.connect(db_path)
+        conn = await aiosqlite.connect(db_path)
 
     return conn
 
-def create_server_table(conn, guild_id):
-    c = conn.cursor()
+async def create_server_table(conn, guild_id):
     table_name = f"guild_{guild_id}"
-    c.execute(f"CREATE TABLE IF NOT EXISTS {table_name} (datetime DATETIME, member_id TEXT, activity_name TEXT)")
-    conn.commit()
+    async with conn.execute(f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            datetime DATETIME, 
+            member_id TEXT, 
+            activity_name TEXT
+        )
+    """):
+        await conn.commit()
 
-def insert_activity(conn, guild_id, member_id, activity_name):
-    c = conn.cursor()
+async def insert_activity(conn, guild_id, member_id, activity_name):
     table_name = f"guild_{guild_id}"
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     prefixed_member_id = f"id_{member_id}"
-    c.execute(f"INSERT INTO {table_name} (datetime, member_id, activity_name) VALUES (?, ?, ?)",
-              (current_time, prefixed_member_id, activity_name))
-    conn.commit()
-def close_connection(conn):
-    conn.close()
+    await conn.execute(f"""
+        INSERT INTO {table_name} (datetime, member_id, activity_name) 
+        VALUES (?, ?, ?)
+    """, (current_time, prefixed_member_id, activity_name))
+    await conn.commit()
 
-def get_recent_activity_members(guild_id, activity_name, minutes=10):
-    conn = sqlite3.connect(os.path.join("Data", "game_activities.db"))
-    c = conn.cursor()
+async def close_connection(conn):
+    await conn.close()
+
+async def get_recent_activity_members(guild_id, activity_name, minutes=10):
+    db_path = os.path.join("Data", "game_activities.db")
+    conn = await aiosqlite.connect(db_path)
     table_name = f"guild_{guild_id}"
     time_threshold = (datetime.now() - timedelta(minutes=minutes)).strftime("%Y-%m-%d %H:%M:%S")
 
-    c.execute(f"""
+    async with conn.execute(f"""
         SELECT DISTINCT member_id 
         FROM {table_name}
         WHERE activity_name = ? AND datetime >= ?
-    """, (activity_name, time_threshold))
+    """, (activity_name, time_threshold)) as cursor:
+        results = await cursor.fetchall()
 
-    results = c.fetchall()
-    conn.close()
-    return [row[0].replace("id_", "") for row in results]  # Убираем префикс "id_"
+    await conn.close()
+    return [row[0].replace("id_", "") for row in results]
 
-
-def get_top_games(guild_id, days, granularity):
-    conn = sqlite3.connect(os.path.join("Data", "game_activities.db"))
-    c = conn.cursor()
-
+async def get_top_games(guild_id, days, granularity):
+    db_path = os.path.join("Data", "game_activities.db")
     table_name = f"guild_{guild_id}"
     end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=days)
@@ -104,117 +110,92 @@ def get_top_games(guild_id, days, granularity):
         ORDER BY COUNT(DISTINCT member_id) DESC
         LIMIT 10;
     """
-    c.execute(query, (start_date_str, end_date_str))
-    result = c.fetchall()
-    conn.close()
+
+    async with aiosqlite.connect(db_path) as conn:
+        async with conn.execute(query, (start_date_str, end_date_str)) as cursor:
+            result = await cursor.fetchall()
 
     return result
 
-def create_guild_table(guild_id):
+async def create_guild_table(guild_id):
     db_path = os.path.join("Data", "main.db")
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
     table_name = f"guild_{guild_id}"
 
-    cursor.execute(f"""
-        CREATE TABLE IF NOT EXISTS {table_name} (
-            param_name TEXT PRIMARY KEY,
-            param_value TEXT
-        )
-    """)
+    async with aiosqlite.connect(db_path) as conn:
+        await conn.execute(f"""
+            CREATE TABLE IF NOT EXISTS {table_name} (
+                param_name TEXT PRIMARY KEY,
+                param_value TEXT
+            )
+        """)
+        await conn.commit()
 
-    conn.commit()
-    conn.close()
 
-
-def write_to_guild_settings_db(guild_id, param_name, param_value):
+async def write_to_guild_settings_db(guild_id, param_name, param_value):
     db_path = os.path.join("Data", "main.db")
-    create_guild_table(guild_id)
+    await create_guild_table(guild_id)  # Предполагаем, что эта функция тоже будет асинхронной
 
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
+    async with aiosqlite.connect(db_path) as conn:
+        table_name = f"guild_{guild_id}"
+        await conn.execute(f"""
+            INSERT INTO {table_name} (param_name, param_value)
+            VALUES (?, ?)
+            ON CONFLICT(param_name) DO UPDATE SET param_value = excluded.param_value
+        """, (param_name, param_value))
+        await conn.commit()
+
+async def delete_from_guild_settings_db(guild_id: int, param_name: str) -> None:
+    db_path = os.path.join("Data", "main.db")
+    async with aiosqlite.connect(db_path) as conn:
+        table_name = f"guild_{guild_id}"
+        await conn.execute(f"DELETE FROM {table_name} WHERE param_name = ?", (param_name,))
+        await conn.commit()
+
+
+async def read_from_guild_settings_db(guild_id, param_name):
+    db_path = os.path.join("Data", "main.db")
     table_name = f"guild_{guild_id}"
 
-    cursor.execute(f"""
-        INSERT INTO {table_name} (param_name, param_value)
-        VALUES (?, ?)
-        ON CONFLICT(param_name) DO UPDATE SET param_value = excluded.param_value
-    """, (param_name, param_value))
-
-    conn.commit()
-    conn.close()
-
-def delete_from_guild_settings_db(guild_id: int, param_name: str) -> None:
-    db_path = os.path.join("Data", "main.db")
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    table_name = f"guild_{guild_id}"
-
-    cursor.execute(f"DELETE FROM {table_name} WHERE param_name = ?", (param_name,))
-
-    conn.commit()
-    conn.close()
-
-
-# Чтение данных из таблицы сервера
-def read_from_guild_settings_db(guild_id, param_name):
-    db_path = os.path.join("Data", "main.db")
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    table_name = f"guild_{guild_id}"
-
-    cursor.execute(f"SELECT param_value FROM {table_name} WHERE param_name = ?", (param_name,))
-    results = cursor.fetchall()
-
-    conn.close()
+    async with aiosqlite.connect(db_path) as conn:
+        async with conn.execute(f"SELECT param_value FROM {table_name} WHERE param_name = ?", (param_name,)) as cursor:
+            results = await cursor.fetchall()
 
     return [result[0] for result in results] if results else []
 
-def create_buttons_table():
+async def create_buttons_table():
     db_path = os.path.join("Data", "main.db")
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS buttons (
-            server_id INTEGER,
-            message_id INTEGER PRIMARY KEY,
-            button_type TEXT,
-            data TEXT,
-            member_id INTEGER
-        )
-    """)
+    async with aiosqlite.connect(db_path) as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS buttons (
+                server_id INTEGER,
+                message_id INTEGER PRIMARY KEY,
+                button_type TEXT,
+                data TEXT,
+                member_id INTEGER
+            )
+        """)
+        await conn.commit()
 
-    conn.commit()
-    conn.close()
-
-def write_to_buttons_db(server_id, message_id, button_type, data=None, member_id=None):
+async def write_to_buttons_db(server_id, message_id, button_type, data=None, member_id=None):
     db_path = os.path.join("Data", "main.db")
-    create_buttons_table()
+    await create_buttons_table()
 
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
+    async with aiosqlite.connect(db_path) as conn:
+        await conn.execute("""
+            INSERT INTO buttons (server_id, message_id, button_type, data, member_id)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(message_id) DO UPDATE SET button_type = excluded.button_type, data = excluded.data, member_id = excluded.member_id
+        """, (server_id, message_id, button_type, json.dumps(data), member_id))
+        await conn.commit()
 
-    cursor.execute("""
-        INSERT INTO buttons (server_id, message_id, button_type, data, member_id)
-        VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(message_id) DO UPDATE SET button_type = excluded.button_type, data = excluded.data, member_id = excluded.member_id
-    """, (server_id, message_id, button_type, json.dumps(data), member_id))
-
-    conn.commit()
-    conn.close()
-
-def read_button_data_from_db(message_id):
+async def read_button_data_from_db(message_id):
     db_path = os.path.join("Data", "main.db")
-    create_buttons_table()
+    await create_buttons_table()
 
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT server_id, button_type, data, member_id FROM buttons WHERE message_id = ?", (message_id,))
-    result = cursor.fetchone()
-
-    conn.close()
+    async with aiosqlite.connect(db_path) as conn:
+        async with conn.execute("SELECT server_id, button_type, data, member_id FROM buttons WHERE message_id = ?", (message_id,)) as cursor:
+            result = await cursor.fetchone()
 
     if result:
         server_id, button_type, data_json, member_id = result
@@ -227,26 +208,19 @@ def read_button_data_from_db(message_id):
         }
     return None
 
-def delete_button_data_from_db(message_id):
+async def delete_button_data_from_db(message_id):
     db_path = os.path.join("Data", "main.db")
-    create_buttons_table()
+    await create_buttons_table()
 
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
+    async with aiosqlite.connect(db_path) as conn:
+        await conn.execute("DELETE FROM buttons WHERE message_id = ?", (message_id,))
+        await conn.commit()
 
-    cursor.execute("DELETE FROM buttons WHERE message_id = ?", (message_id,))
-    conn.commit()
-    conn.close()
-
-def read_all_buttons_data():
+async def read_all_buttons_data():
     db_path = os.path.join("Data", "main.db")
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT message_id, server_id, button_type, data, member_id FROM buttons")
-    results = cursor.fetchall()
-
-    conn.close()
+    async with aiosqlite.connect(db_path) as conn:
+        async with conn.execute("SELECT message_id, server_id, button_type, data, member_id FROM buttons") as cursor:
+            results = await cursor.fetchall()
 
     return [
         {
@@ -259,61 +233,53 @@ def read_all_buttons_data():
         for row in results
     ]
 
-def check_and_initialize_members_db():
+async def check_and_initialize_members_db():
     db_path = os.path.join("Data", "members.db")
     if not os.path.exists(db_path):
-        conn = sqlite3.connect(db_path)
-        c = conn.cursor()
-        c.execute('''CREATE TABLE settings (member_id INTEGER PRIMARY KEY, option TEXT, data TEXT)''')
-        conn.commit()
+        async with aiosqlite.connect(db_path) as conn:
+            await conn.execute('''CREATE TABLE settings (member_id INTEGER PRIMARY KEY, option TEXT, data TEXT)''')
+            await conn.commit()
+        return None
     else:
-        conn = sqlite3.connect(db_path)
-    return conn
+        return await aiosqlite.connect(db_path)
 
-def create_settings_table():
-    check_and_initialize_members_db()
+
+async def create_settings_table():
+    await check_and_initialize_members_db()
     db_path = os.path.join("Data", "members.db")
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS settings (
-            member_id INTEGER PRIMARY KEY,
-            option TEXT,
-            data TEXT
-        )
-    """)
+    async with aiosqlite.connect(db_path) as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS settings (
+                member_id INTEGER PRIMARY KEY,
+                option TEXT,
+                data TEXT
+            )
+        """)
+        await conn.commit()
 
-    conn.commit()
-    conn.close()
 
-def write_to_members_db(member, option, data=None):
+async def write_to_members_db(member, option, data=None):
     db_path = os.path.join("Data", "members.db")
-    create_settings_table()
+    await create_settings_table()
 
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
+    async with aiosqlite.connect(db_path) as conn:
+        await conn.execute("""
+            INSERT INTO settings (member_id, option, data)
+            VALUES (?, ?, ?)
+            ON CONFLICT(member_id) DO UPDATE SET option = excluded.option, data = excluded.data
+        """, (member.id, option, json.dumps(data)))
+        await conn.commit()
 
-    cursor.execute("""
-        INSERT INTO settings (member_id, option, data)
-        VALUES (?, ?, ?)
-        ON CONFLICT(member_id) DO UPDATE SET option = excluded.option, data = excluded.data
-    """, (member.id, option, json.dumps(data)))
 
-    conn.commit()
-    conn.close()
-
-def read_member_data_from_db(member, option):
+async def read_member_data_from_db(member, option):
     db_path = os.path.join("Data", "members.db")
-    create_settings_table()
+    await create_settings_table()
 
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT data FROM settings WHERE member_id = ? AND option = ?", (member.id, option))
-    result = cursor.fetchone()
-
-    conn.close()
+    async with aiosqlite.connect(db_path) as conn:
+        async with conn.execute("SELECT data FROM settings WHERE member_id = ? AND option = ?",
+                                (member.id, option)) as cursor:
+            result = await cursor.fetchone()
 
     if result:
         data_json = result[0]
@@ -325,13 +291,135 @@ def read_member_data_from_db(member, option):
         }
     return None
 
-def delete_member_data_from_db(member, option):
+async def delete_member_data_from_db(member, option):
     db_path = os.path.join("Data", "members.db")
-    create_settings_table()
+    await create_settings_table()
 
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
+    async with aiosqlite.connect(db_path) as conn:
+        cursor = await conn.execute("DELETE FROM settings WHERE member_id = ? AND option = ?", (member.id, option))
+        await conn.commit()
 
-    cursor.execute("DELETE FROM settings WHERE member_id = ? AND option = ?", (member.id, option))
-    conn.commit()
-    conn.close()
+async def check_and_initialize_logs_db(guild_id, db_type="buffer"):
+    if db_type == "buffer":
+        db_path = os.path.join("Data", "logs.db")
+    elif db_type == "analytics":
+        db_path = os.path.join("Data", "analytics.db")
+    else:
+        raise ValueError("Неверный тип базы данных. Используйте 'buffer' или 'analytics'.")
+
+    async with aiosqlite.connect(db_path) as conn:
+        table_name = f"guild{guild_id}"
+        await conn.execute(f'''
+            CREATE TABLE IF NOT EXISTS {table_name} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date_time TEXT,
+                event_type TEXT,
+                data TEXT
+            )
+        ''')
+        await conn.commit()
+    return conn
+
+
+async def log_event_to_db(guild_id, event_type, data):
+    conn = await check_and_initialize_logs_db(guild_id, db_type="buffer")
+    async with conn:
+        data_json = json.dumps(data)
+        current_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+        table_name = f"guild{guild_id}"
+        await conn.execute(f'''
+            INSERT INTO {table_name} (date_time, event_type, data)
+            VALUES (?, ?, ?)
+        ''', (current_time, event_type, data_json))
+
+        await conn.commit()
+
+
+async def copy_logs_to_analytics(guild_id):
+    buffer_db_path = os.path.join("Data", "logs.db")
+    analytics_db_path = os.path.join("Data", "analytics.db")
+
+    async with aiosqlite.connect(buffer_db_path) as buffer_conn, \
+            aiosqlite.connect(analytics_db_path) as analytics_conn:
+        table_name = f"guild{guild_id}"
+
+        async with buffer_conn.execute(f"SELECT date_time, event_type, data FROM {table_name}") as buffer_cursor:
+            logs_to_copy = await buffer_cursor.fetchall()
+
+        if logs_to_copy:
+            await analytics_conn.executemany(f'''
+                INSERT INTO {table_name} (date_time, event_type, data)
+                VALUES (?, ?, ?)
+            ''', logs_to_copy)
+
+            await buffer_conn.execute(f"DELETE FROM {table_name}")
+
+        await buffer_conn.commit()
+        await analytics_conn.commit()
+
+
+async def read_logs_from_analytics(guild_id, event_type=None, start_time=None, end_time=None, search_str=None):
+    conn = await check_and_initialize_logs_db(guild_id, db_type="analytics")
+    table_name = f"guild{guild_id}"
+
+    query = f"SELECT date_time, event_type, data FROM {table_name} WHERE 1=1"
+    params = []
+
+    if event_type:
+        query += " AND event_type = ?"
+        params.append(event_type)
+
+    if start_time:
+        query += " AND date_time >= ?"
+        params.append(start_time)
+    if end_time:
+        query += " AND date_time <= ?"
+        params.append(end_time)
+
+    if search_str:
+        query += " AND data LIKE ?"
+        params.append(f"%{search_str}%")
+
+    async with conn.execute(query, params) as cursor:
+        logs = await cursor.fetchall()
+
+    await conn.close()
+
+    parsed_logs = [
+        {
+            "date_time": log[0],
+            "event_type": log[1],
+            "data": json.loads(log[2])
+        } for log in logs
+    ]
+
+    return parsed_logs
+
+
+async def copy_logs_to_analytics(guild_id):
+    buffer_db_path = os.path.join("Data", "logs.db")
+    analytics_db_path = os.path.join("Data", "analytics.db")
+
+    while True:
+        async with aiosqlite.connect(buffer_db_path) as buffer_conn, aiosqlite.connect(
+                analytics_db_path) as analytics_conn:
+            buffer_cursor = await buffer_conn.cursor()
+            analytics_cursor = await analytics_conn.cursor()
+
+            table_name = f"guild{guild_id}"
+            await buffer_cursor.execute(f"SELECT date_time, event_type, data FROM {table_name}")
+            logs_to_copy = await buffer_cursor.fetchall()
+
+            if logs_to_copy:
+                await analytics_cursor.executemany(f'''
+                    INSERT INTO {table_name} (date_time, event_type, data)
+                    VALUES (?, ?, ?)
+                ''', logs_to_copy)
+
+                await buffer_cursor.execute(f"DELETE FROM {table_name}")
+
+            await buffer_conn.commit()
+            await analytics_conn.commit()
+
+        await asyncio.sleep(600)

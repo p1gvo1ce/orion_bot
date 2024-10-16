@@ -1,5 +1,5 @@
 import discord
-import sqlite3
+import aiosqlite
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.ticker import MaxNLocator
@@ -9,9 +9,8 @@ from datetime import datetime, timedelta, timezone
 from Modules.phrases import get_phrase
 
 # Подготовка данных о топ играх и построение графика
-def plot_top_games(guild, top_games, days, granularity, game = None):
-    conn = sqlite3.connect(os.path.join("Data", "game_activities.db"))
-    c = conn.cursor()
+async def plot_top_games(guild, top_games, days, granularity, game=None):
+    db_path = os.path.join("Data", "game_activities.db")
     guild_id = guild.id
     guild_name = guild.name
     table_name = f"guild_{guild_id}"
@@ -35,20 +34,20 @@ def plot_top_games(guild, top_games, days, granularity, game = None):
     if game:
         top_games = [[game]]
     game_data = {}
-    for game in top_games:
-        game_name = game[0]
-        query = f"""
-            SELECT strftime('{date_format}', datetime) as period, COUNT(DISTINCT member_id) as unique_players
-            FROM {table_name}
-            WHERE activity_name = ? AND datetime BETWEEN ? AND ?
-            GROUP BY period
-            ORDER BY period;
-        """
-        c.execute(query, (game_name, start_date_str, end_date_str))
-        periods = c.fetchall()
 
-        game_data[game_name] = periods
-    conn.close()
+    async with aiosqlite.connect(db_path) as conn:
+        for game in top_games:
+            game_name = game[0]
+            query = f"""
+                SELECT strftime('{date_format}', datetime) as period, COUNT(DISTINCT member_id) as unique_players
+                FROM {table_name}
+                WHERE activity_name = ? AND datetime BETWEEN ? AND ?
+                GROUP BY period
+                ORDER BY period;
+            """
+            async with conn.execute(query, (game_name, start_date_str, end_date_str)) as cursor:
+                periods = await cursor.fetchall()
+                game_data[game_name] = periods
 
     # Построение графика
     plt.figure(figsize=(10, 6))
@@ -58,9 +57,9 @@ def plot_top_games(guild, top_games, days, granularity, game = None):
             counts = [p[1] for p in periods]
             plt.plot(dates, counts, label=game_name)
 
-    plt.xlabel(f'{get_phrase('Time', guild)} ({granularity})')
-    plt.ylabel(get_phrase('Number of unique players', guild))
-    plt.title(f'{get_phrase('Top games activity on', guild)} {guild_name}')
+    plt.xlabel(f'{await get_phrase("Time", guild)} ({granularity})')
+    plt.ylabel(await get_phrase('Number of unique players', guild))
+    plt.title(f'{await get_phrase("Top games activity on", guild)} {guild_name}')
     plt.legend()
 
     # Ограничение количества меток на оси X
@@ -84,55 +83,59 @@ def plot_top_games(guild, top_games, days, granularity, game = None):
 
     return buf
 
-def top_games_create_embed(top_games, days, granularity, guild):
-    conn = sqlite3.connect(os.path.join("Data", "game_activities.db"))
-    c = conn.cursor()
 
+async def top_games_create_embed(top_games, days, granularity, guild):
+    db_path = os.path.join("Data", "game_activities.db")
     guild_id = guild.id
     table_name = f"guild_{guild_id}"
 
-    query_total_unique_players = f"""
-        SELECT COUNT(DISTINCT member_id) 
-        FROM {table_name}
-    """
-    c.execute(query_total_unique_players)
-    total_unique_players = c.fetchone()[0]
-    conn.close()
+    async with aiosqlite.connect(db_path) as conn:
+        query_total_unique_players = f"""
+            SELECT COUNT(DISTINCT member_id) 
+            FROM {table_name}
+        """
+        async with conn.execute(query_total_unique_players) as cursor:
+            total_unique_players = await cursor.fetchone()
+            total_unique_players = total_unique_players[0] if total_unique_players else 0
 
-    embed = discord.Embed(title=f"{get_phrase('Top', guild)} {len(top_games)} "
-                                f"{get_phrase('Games Activity', guild)}", color=discord.Color.blue())
-    description = (f"{get_phrase('Data for the last', guild)} {days} "
-                   f"{get_phrase('days with granularity', guild)}: {granularity}\n\n")
+    embed = discord.Embed(
+        title=f"{await get_phrase('Top', guild)} {len(top_games)} {await get_phrase('Games Activity', guild)}",
+        color=discord.Color.blue()
+    )
+
+    description = (f"{await get_phrase('Data for the last', guild)} {days} "
+                   f"{await get_phrase('days with granularity', guild)}: {granularity}\n\n")
+
     for i, game in enumerate(top_games):
-        description += f"**{i + 1}. {game[0]}** - {game[1]} {get_phrase('unique players', guild)}\n"
+        description += f"**{i + 1}. {game[0]}** - {game[1]} {await get_phrase('unique players', guild)}\n"
+
     embed.description = description
 
-    embed.set_footer(text=f"{get_phrase('Data based on', guild)} {total_unique_players} "
-                          f"{get_phrase('unique players over all time', guild)}")
+    embed.set_footer(text=f"{await get_phrase('Data based on', guild)} {total_unique_players} "
+                          f"{await get_phrase('unique players over all time', guild)}")
 
     return embed
 
-def popularity_games_create_embed(game, days, granularity, guild):
-    conn = sqlite3.connect(os.path.join("Data", "game_activities.db"))
-    c = conn.cursor()
-
+async def popularity_games_create_embed(game, days, granularity, guild):
+    db_path = os.path.join("Data", "game_activities.db")
     guild_id = guild.id
     table_name = f"guild_{guild_id}"
 
-    query_total_unique_players = f"""
-        SELECT COUNT(DISTINCT member_id) 
-        FROM {table_name}
-    """
-    c.execute(query_total_unique_players)
-    total_unique_players = c.fetchone()[0]
-    conn.close()
+    async with aiosqlite.connect(db_path) as conn:
+        query_total_unique_players = f"""
+            SELECT COUNT(DISTINCT member_id) 
+            FROM {table_name}
+        """
+        async with conn.execute(query_total_unique_players) as cursor:
+            total_unique_players = await cursor.fetchone()
+            total_unique_players = total_unique_players[0] if total_unique_players else 0  # Обработка случая, если выборка пуста
 
     embed = discord.Embed(title=f"{game} Activity", color=discord.Color.blue())
-    description = (f"{game} {get_phrase('popularity chart for the last', guild)} {days} "
-                   f"{get_phrase('days with granularity', guild)}: {granularity}\n\n")
+    description = (f"{game} {await get_phrase('popularity chart for the last', guild)} {days} "
+                   f"{await get_phrase('days with granularity', guild)}: {granularity}\n\n")
     embed.description = description
 
-    embed.set_footer(text=f"{get_phrase('Data based on', guild)} {total_unique_players} "
-                          f"{get_phrase('unique players over all time', guild)}")
+    embed.set_footer(text=f"{await get_phrase('Data based on', guild)} {total_unique_players} "
+                          f"{await get_phrase('unique players over all time', guild)}")
 
     return embed

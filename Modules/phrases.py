@@ -235,12 +235,12 @@ If this is not possible for some activity, then you need to contact the owners (
     }
 }
 
-def get_guild_language(guild_id: int) -> str:
+async def get_guild_language(guild_id: int) -> str:
     param_name = "language"
     guild_id = f"{guild_id}"
     language = ''
     try:
-        language = read_from_guild_settings_db(guild_id, param_name)
+        language = await read_from_guild_settings_db(guild_id, param_name)
     except:
         pass
 
@@ -248,15 +248,15 @@ def get_guild_language(guild_id: int) -> str:
         return language[0]
     else:
         default_language = "en" # default
-        write_to_guild_settings_db(guild_id, param_name, default_language)
+        await write_to_guild_settings_db(guild_id, param_name, default_language)
         return default_language
 
 
-def get_phrase(phrase_key: str, guild: str) -> str:
+async def get_phrase(phrase_key: str, guild: str) -> str:
     try:
         guild_id = guild.id
     except:
         guild_id = guild
-    language = get_guild_language(guild_id)
+    language = await get_guild_language(guild_id)
 
     return bot_phrases.get(phrase_key, {}).get(language, "text 404")

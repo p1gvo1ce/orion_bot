@@ -34,6 +34,8 @@ In development:
 - Creating general notes about users available to server moderators
 - Assigning roles when connecting depending on the source of the invitation
 - Switching bot messages to embed where allowed
+- Moderation based on regular expressions (message deletion, mute, ban)
+- Checking url invitations sent to the chat, deleting invitations not related to the current server
 
 ------------
 Бот разрабатывается исходя из потребностей сервера [Safe Space](https://discord.gg/safe-space-702588231614595172). Код доступен для использования и редактирования.
@@ -72,4 +74,6 @@ In development:
 - Создание общих заметок о пользователях доступные для модераторов сервера
 - Присвоение ролей при подключении в зависимости от источника приглашения
 - Переход сообщений бота на embed там, где это допустимо
+- Модерация на основе регулярных выражений (удаление сообщения, мут, бан)
+- Проверка отправляемых в чат ссылок-приглашений, удаление приглашений не относящихся к текущему серверу
 

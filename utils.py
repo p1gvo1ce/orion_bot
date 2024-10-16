@@ -10,7 +10,7 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 logger = logging.getLogger('discord')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 log_dir = 'logs'
 if not os.path.exists(log_dir):

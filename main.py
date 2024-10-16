@@ -44,15 +44,15 @@ async def run_bot(token, conn):
             if retry_count >= 2:
                 os.system("python bot.py")
 
-def main():
-    conn = check_and_initialize_main_db()
-    token = get_token_from_db(conn)
+async def main():
+    conn = await check_and_initialize_main_db()
+    token = await get_token_from_db(conn)
 
     if not token:
         print("Token not found.")
-        token = request_token(conn)
+        token = await request_token(conn)
 
-    asyncio.run(run_bot(token, conn))
+    await run_bot(token, conn)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

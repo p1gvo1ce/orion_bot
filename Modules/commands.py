@@ -5,7 +5,7 @@ from discord import app_commands
 import random
 
 from Modules.db_control import (write_to_guild_settings_db, delete_from_guild_settings_db, get_top_games,
-                                write_to_buttons_db, write_to_members_db, read_member_data_from_db,
+                                write_to_buttons_db, write_to_members_db,
                                 delete_member_data_from_db)
 from Modules.phrases import get_phrase
 from Modules.analytics import top_games_create_embed, plot_top_games, popularity_games_create_embed
@@ -35,16 +35,18 @@ async def create_party_search_channel(interaction: discord.Interaction):
     guild_id = guild.id
 
     # Записываем информацию в базу данных
-    write_to_guild_settings_db(guild_id, "party_find_text_channel_id", f"id{text_channel_id}")
-    write_to_guild_settings_db(guild_id, "party_find_voice_channel_id", f"id{voice_channel_id}")
-    find_message_without_activity = await text_channel.send(get_phrase('Create a party search', guild))
-    write_to_buttons_db(guild.id, find_message_without_activity.id, "FindPartyWithoutActivity", '{}', 12345)
-    await find_message_without_activity.edit(view=FindPartyWithoutActivity(guild))
+    await write_to_guild_settings_db(guild_id, "party_find_text_channel_id", f"id{text_channel_id}")
+    await write_to_guild_settings_db(guild_id, "party_find_voice_channel_id", f"id{voice_channel_id}")
+    find_message_without_activity = await text_channel.send(await get_phrase('Create a party search', guild))
+    await write_to_buttons_db(guild.id, find_message_without_activity.id, "FindPartyWithoutActivity", '{}', 12345)
+    modal = FindPartyWithoutActivity(guild)
+    await modal.add_buttons()
+    await find_message_without_activity.edit(view=modal)
 
     # Отправляем сообщение о создании каналов
-    await interaction.response.send_message(f"{get_phrase('channels for party search created', guild)}:\n"
-                                            f"{get_phrase('Text Channel', guild)}: {text_channel.mention}\n"
-                                            f"{get_phrase('Voice Channel', guild)}: {voice_channel.mention}")
+    await interaction.response.send_message(f"{await get_phrase('channels for party search created', guild)}:\n"
+                                            f"{await get_phrase('Text Channel', guild)}: {text_channel.mention}\n"
+                                            f"{await get_phrase('Voice Channel', guild)}: {voice_channel.mention}")
 
 
 # Смена языка сообщений бота
@@ -64,11 +66,11 @@ async def language(interaction: discord.Interaction, lang: str):
             ephemeral=True
         )
     else:
-        delete_from_guild_settings_db(interaction.guild.id, 'language')
-        write_to_guild_settings_db(interaction.guild.id, "language", lang)
+        await delete_from_guild_settings_db(interaction.guild.id, 'language')
+        await write_to_guild_settings_db(interaction.guild.id, "language", lang)
 
         embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
-        description = get_phrase('language_changed', interaction.guild)
+        description = await get_phrase('language_changed', interaction.guild)
         embed.description = description
 
         await interaction.response.send_message(
@@ -82,12 +84,12 @@ async def language(interaction: discord.Interaction, lang: str):
 @app_commands.describe(days="Number of days to analyze", top="Number of top games", granularity="Granularity (day, week, month)")
 async def top_games_command(interaction: discord.Interaction, days: int, top: int, granularity: str):
     guild_id = interaction.guild_id
-    top_games = get_top_games(guild_id, days, granularity)
+    top_games = await get_top_games(guild_id, days, granularity)
     top_games = top_games[:top]
 
-    graph_buf = plot_top_games(interaction.guild, top_games, days, granularity)
+    graph_buf = await plot_top_games(interaction.guild, top_games, days, granularity)
 
-    embed = top_games_create_embed(top_games, days, granularity, interaction.guild)
+    embed = await top_games_create_embed(top_games, days, granularity, interaction.guild)
 
     file = discord.File(fp=graph_buf, filename="top_games.png")
     embed.set_image(url="attachment://top_games.png")
@@ -99,9 +101,9 @@ async def top_games_command(interaction: discord.Interaction, days: int, top: in
 
 async def game_popularity_chart(interaction: discord.Interaction, days: int, granularity: str, game: str):
 
-    graph_buf = plot_top_games(interaction.guild, [], days, granularity, game)
+    graph_buf = await plot_top_games(interaction.guild, [], days, granularity, game)
 
-    embed = popularity_games_create_embed(game, days, granularity, interaction.guild)
+    embed = await popularity_games_create_embed(game, days, granularity, interaction.guild)
 
     file = discord.File(fp=graph_buf, filename=f"{game}_popularity.png")
     embed.set_image(url=f"attachment://{game}_popularity.png")
@@ -114,23 +116,23 @@ async def game_popularity_chart(interaction: discord.Interaction, days: int, gra
 async def language(interaction: discord.Interaction, mode: str, delay: int):
     mods = ['on', 'off']
     if mode not in mods:
-        await interaction.response.send_message(get_phrase('You need to specify the on/off mode'),
+        await interaction.response.send_message(await get_phrase('You need to specify the on/off mode'),
                                                 ephemeral=True)
     else:
         try:
-            delete_from_guild_settings_db(interaction.guild.id, 'removing_greetings')
-            delete_from_guild_settings_db(interaction.guild.id, 'removing_greetings_delay')
+            await delete_from_guild_settings_db(interaction.guild.id, 'removing_greetings')
+            await delete_from_guild_settings_db(interaction.guild.id, 'removing_greetings_delay')
         except:
             pass
-        write_to_guild_settings_db(interaction.guild.id, "removing_greetings", mode)
-        write_to_guild_settings_db(interaction.guild.id, "removing_greetings_delay", delay)
+        await write_to_guild_settings_db(interaction.guild.id, "removing_greetings", mode)
+        await write_to_guild_settings_db(interaction.guild.id, "removing_greetings_delay", delay)
 
         embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
         if mode == 'on':
 
-            description = (f"{get_phrase('Automatic greeting deletion enabled', interaction.guild)}.\n"
-                                                    f"{get_phrase('Delay', interaction.guild)} {delay} "
-                                                    f"{get_phrase('seconds', interaction.guild)}.")
+            description = (f"{await get_phrase('Automatic greeting deletion enabled', interaction.guild)}.\n"
+                                                    f"{await get_phrase('Delay', interaction.guild)} {delay} "
+                                                    f"{await get_phrase('seconds', interaction.guild)}.")
             embed.description = description
             await interaction.response.send_message(
                 embed=embed,
@@ -138,7 +140,7 @@ async def language(interaction: discord.Interaction, mode: str, delay: int):
             )
 
         else:
-            description = get_phrase('Automatic greeting deletion disabled', interaction.guild)
+            description = await get_phrase('Automatic greeting deletion disabled', interaction.guild)
             embed.description = description
             await interaction.response.send_message(
                 embed=embed,
@@ -185,7 +187,7 @@ async def create_top_games_roles(interaction: discord.Interaction, top_count: in
         await check_and_assign_roles(guild, top_games)
 
         embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
-        description = get_phrase('Roles for top games have been created', interaction.guild) % top_count
+        description = await get_phrase('Roles for top games have been created', interaction.guild) % top_count
         embed.description = description
 
         await interaction.followup.send(
@@ -200,13 +202,13 @@ async def create_top_games_roles(interaction: discord.Interaction, top_count: in
 @app_commands.describe(name="name for your personal voice channel")
 async def set_voice_name(interaction: discord.Interaction, name: str):
     try:
-        delete_member_data_from_db(interaction.user, 'voice_channel_name')
+        await delete_member_data_from_db(interaction.user, 'voice_channel_name')
     except:
         pass
-    write_to_members_db(interaction.user, 'voice_channel_name', name)
+    await write_to_members_db(interaction.user, 'voice_channel_name', name)
 
     embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
-    description = get_phrase('Name_personal_voice_set', interaction.guild)
+    description = await get_phrase('Name_personal_voice_set', interaction.guild)
     embed.description = description
 
     await interaction.response.send_message(
@@ -218,16 +220,16 @@ async def set_voice_name(interaction: discord.Interaction, name: str):
 @app_commands.describe(mode="Mode (on, off)")
 async def dont_update_roles(interaction: discord.Interaction, mode: str):
     try:
-        delete_member_data_from_db(interaction.user, 'game_roles_update')
+        await delete_member_data_from_db(interaction.user, 'game_roles_update')
     except:
         pass
-    write_to_members_db(interaction.user, 'game_roles_update', mode)
+    await write_to_members_db(interaction.user, 'game_roles_update', mode)
 
     embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
     if mode == 'on':
-        description = get_phrase('Game Roles Update Enabled', interaction.guild)
+        description = await get_phrase('Game Roles Update Enabled', interaction.guild)
     else:
-        description = get_phrase('Game role update disabled', interaction.guild)
+        description = await get_phrase('Game role update disabled', interaction.guild)
     embed.description = description
 
     await interaction.response.send_message(

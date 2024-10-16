@@ -12,7 +12,7 @@ async def game_role_reaction_add(payload):
     message = await channel.fetch_message(payload.message_id)
 
     guild_id = message.guild.id
-    game_roles_channel_ids = read_from_guild_settings_db(guild_id, "game_roles_channel_id")
+    game_roles_channel_ids = await read_from_guild_settings_db(guild_id, "game_roles_channel_id")
 
     game_roles_channel_ids = [clean_channel_id(id_str) for id_str in game_roles_channel_ids]
 
@@ -38,7 +38,7 @@ async def game_role_reaction_remove(payload):
     message = await channel.fetch_message(payload.message_id)
 
     guild_id = message.guild.id
-    game_roles_channel_ids = read_from_guild_settings_db(guild_id, "game_roles_channel_id")
+    game_roles_channel_ids = await read_from_guild_settings_db(guild_id, "game_roles_channel_id")
 
     game_roles_channel_ids = [clean_channel_id(id_str) for id_str in game_roles_channel_ids]
 
