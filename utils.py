@@ -209,7 +209,7 @@ def is_game_valid(game_name):
     if game_name in game_data:
         print(f"Результат найден в локальном файле: {game_data[game_name]}")
         return game_data[game_name] == "True"
-    client_id, client_secret = load_credentials('data/twitch_api.json')
+    client_id, client_secret = load_credentials('Data/twitch_api.json')
     access_token = get_access_token(client_id, client_secret)
     # Если игры нет в локальном файле, делаем запрос к API
     url = 'https://api.igdb.com/v4/games'
