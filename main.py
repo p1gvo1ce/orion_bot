@@ -1,6 +1,7 @@
 import tracemalloc
 import asyncio
 import os
+import git  # Импортируем библиотеку для работы с Git
 
 from utils import get_bot
 bot = get_bot()
@@ -34,7 +35,19 @@ for event_type, handlers in listeners.items():
     else:
         bot.add_listener(globals()[handlers], event_type)
 
+async def update_code(repo_path):
+    try:
+        repo = git.Repo(repo_path)
+        origin = repo.remotes.origin
+        origin.pull()  # Получение обновлений
+        print("Код обновлен из репозитория.")
+        return True  # Обновление прошло успешно
+    except Exception as e:
+        print(f"Ошибка при обновлении кода: {e}")
+        return False  # Обновление не удалось
+
 async def run_bot(token, conn):
+    repo_path = '/path/to/your/local/repo'  # Замените на путь к вашему локальному репозиторию
     retry_count = 0
     while retry_count < 3:
         try:
@@ -44,11 +57,19 @@ async def run_bot(token, conn):
             if str(e) == "Improper token has been passed.":
                 token = request_token(conn)
             else:
-                os.system("python bot.py")
+                if await update_code(repo_path):  # Проверяем обновления перед перезапуском
+                    os.system("python bot.py")  # Перезапускаем бот
 
             retry_count += 1
             if retry_count >= 2:
                 os.system("python bot.py")
+
+async def check_for_updates(repo_path):
+    await bot.wait_until_ready()
+    while not bot.is_closed():
+        if await update_code(repo_path):  # Проверяем обновления каждую минуту
+            os.system("python bot.py")  # Перезапускаем бот после обновления
+        await asyncio.sleep(60)  # Проверяем каждую минуту
 
 async def main():
     conn = await check_and_initialize_main_db()
@@ -58,6 +79,7 @@ async def main():
         print("Token not found.")
         token = await request_token(conn)
 
+    bot.loop.create_task(check_for_updates('/path/to/your/local/repo'))  # Замените на путь к вашему локальному репозиторию
     await run_bot(token, conn)
 
 if __name__ == "__main__":
