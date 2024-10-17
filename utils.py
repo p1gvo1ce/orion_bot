@@ -199,7 +199,7 @@ def save_game_data(file_path, game_data):
 
 
 def is_game_valid(game_name):
-    file_path = 'data/games.json'
+    file_path = 'Data/games.json'
     game_name_lower = game_name.lower()
 
     # Загружаем данные из JSON
