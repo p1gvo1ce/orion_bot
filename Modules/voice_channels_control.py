@@ -57,13 +57,13 @@ async def find_party_controller(member, before, after):
                     role_name = activity.name
                     role = discord.utils.get(after.channel.guild.roles, name=role_name)
                     channel_name = activity.name
-
-                    if role is None and is_game_valid(activity.name):
+                    is_valid_game = is_game_valid(activity.name)
+                    if role is None and is_valid_game:
                         random_color = random.randint(0, 0xFFFFFF)
                         role = await after.channel.guild.create_role(name=role_name, color=discord.Color(random_color))
                         await add_game_in_game_roles_channel(role, after.channel.guild)
 
-                    if role not in member.roles:
+                    if role not in member.roles and is_valid_game:
                         await member.add_roles(role)
             member_data = await read_member_data_from_db(member, 'voice_channel_name')
             if member_data:
