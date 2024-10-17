@@ -4,6 +4,7 @@ import logging
 import csv
 import os
 import json
+import requests
 from datetime import datetime, timedelta, timezone
 import dateparser
 
@@ -141,3 +142,100 @@ def parse_time(time_str: str, default_days_ago: int = 365) -> str:
 
     default_time = datetime.now(timezone.utc) - timedelta(days=default_days_ago)
     return default_time.strftime("%Y-%m-%d %H:%M:%S")
+
+
+
+def load_credentials(file_path):
+    '''
+
+    :json format:
+{
+  "id": "Twitch API Client ID",
+  "secret": "Twitch API Client Secret Code"
+}
+    '''
+    with open(file_path, 'r') as file:
+        credentials = json.load(file)
+    return credentials['id'], credentials['secret']
+
+def get_access_token(client_id, client_secret):
+    url = 'https://id.twitch.tv/oauth2/token'
+    payload = {
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'grant_type': 'client_credentials'
+    }
+    response = requests.post(url, data=payload)
+    token = response.json().get('access_token')
+    return token
+
+
+def load_game_data(file_path):
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            return json.load(file)
+    else:
+        return {}
+
+
+def save_game_data(file_path, game_data):
+    with open(file_path, 'w') as file:
+        json.dump(game_data, file, indent=4)
+
+
+def load_game_data(file_path):
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            return json.load(file)
+    else:
+        return {}
+
+
+def save_game_data(file_path, game_data):
+    with open(file_path, 'w') as file:
+        json.dump(game_data, file, indent=4)
+
+
+def is_game_valid(game_name):
+    file_path = 'data/games.json'
+    game_name_lower = game_name.lower()
+
+    # Загружаем данные из JSON
+    game_data = load_game_data(file_path)
+
+    # Проверяем, есть ли игра уже в JSON-файле
+    if game_name in game_data:
+        print(f"Результат найден в локальном файле: {game_data[game_name]}")
+        return game_data[game_name] == "True"
+    client_id, client_secret = load_credentials('data/twitch_api.json')
+    access_token = get_access_token(client_id, client_secret)
+    # Если игры нет в локальном файле, делаем запрос к API
+    url = 'https://api.igdb.com/v4/games'
+    headers = {
+        'Client-ID': client_id,
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+    query = f'search "{game_name}"; fields name;'
+    response = requests.post(url, data=query, headers=headers)
+
+    if response.status_code == 200:
+        games = response.json()
+        if games:
+            games = [game['name'] for game in games]
+            for game in games:
+                if game_name_lower == game.lower():
+                    print(f"Игра найдена: {game}")
+
+                    # Сохраняем результат в файл
+                    game_data[game_name] = "True"
+                    save_game_data(file_path, game_data)
+                    return True
+
+        # Если игры нет, записываем результат "False"
+        print("Игра не найдена через API.")
+        game_data[game_name] = "False"
+        save_game_data(file_path, game_data)
+        return False
+    else:
+        raise Exception(f"Error: {response.status_code}, {response.text}")

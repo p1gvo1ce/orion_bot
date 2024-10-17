@@ -5,7 +5,7 @@ import random
 import asyncio
 from Modules.db_control import read_from_guild_settings_db, write_to_buttons_db, read_member_data_from_db
 from Modules.text_channels_control import add_game_in_game_roles_channel
-from utils import clean_channel_id, get_bot
+from utils import clean_channel_id, get_bot, is_game_valid
 from Modules.phrases import get_phrase
 from Modules.buttons import JoinButton
 
@@ -53,7 +53,7 @@ async def find_party_controller(member, before, after):
         if voice_channel_id in search_voice_channel_ids:
 
             for activity in member.activities:
-                if activity.type == discord.ActivityType.playing:
+                if activity.type == discord.ActivityType.playing and is_game_valid(activity.name):
                     role_name = activity.name
                     role = discord.utils.get(after.channel.guild.roles, name=role_name)
                     channel_name = activity.name
