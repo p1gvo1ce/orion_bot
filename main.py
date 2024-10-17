@@ -79,8 +79,10 @@ async def main():
         print("Token not found.")
         token = await request_token(conn)
 
-    bot.loop.create_task(check_for_updates('/path/to/your/local/repo'))  # Замените на путь к вашему локальному репозиторию
+    # Запускаем задачу асинхронно
+    asyncio.create_task(check_for_updates('/path/to/your/local/repo'))  # Замените на путь к вашему локальному репозиторию
     await run_bot(token, conn)
 
 if __name__ == "__main__":
     asyncio.run(main())
+
