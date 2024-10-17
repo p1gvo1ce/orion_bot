@@ -65,10 +65,10 @@ async def update_buttons_on_start():
 
             else:
                 await delete_button_data_from_db(button_data["message_id"])
-
-        for voice in guild.voice_channels:
-            if str(voice.id) in find_voices_ids and len(voice.members) == 0:
-                await voice.delete()
+        if guild:
+            for voice in guild.voice_channels:
+                if str(voice.id) in find_voices_ids and len(voice.members) == 0:
+                    await voice.delete()
 
 
 def extract_id(message):

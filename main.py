@@ -1,7 +1,7 @@
 import tracemalloc
 import asyncio
 import os
-import git  # Импортируем библиотеку для работы с Git
+import aiohttp
 
 from utils import get_bot
 bot = get_bot()
@@ -14,6 +14,8 @@ from Modules.voice_channels_control import find_party_controller
 from Modules.role_control import game_role_reaction_add, game_role_reaction_remove
 from Modules.events import bot_start, join_from_invite, greetings_delete_greetings, start_copy_logs_to_analytics
 from Modules.logger import log_new_message, log_edited_message, log_deleted_message
+
+GITHUB_API_URL = "https://api.github.com/repos/p1gvo1ce/orion_bot/commits/master"
 
 tracemalloc.start()
 
@@ -64,12 +66,35 @@ async def run_bot(token, conn):
             if retry_count >= 2:
                 os.system("python bot.py")
 
-async def check_for_updates(repo_path):
+
+async def fetch_latest_commit():
+    async with aiohttp.ClientSession() as session:
+        async with session.get(GITHUB_API_URL) as response:
+            if response.status == 200:
+                data = await response.json()
+                return data['sha']
+            else:
+                print(f"Ошибка при доступе к GitHub API: {response.status}")
+                return None
+
+
+async def check_for_updates():
     await bot.wait_until_ready()
+    current_commit = await fetch_latest_commit()
+
     while not bot.is_closed():
-        if await update_code(repo_path):  # Проверяем обновления каждую минуту
-            os.system("python bot.py")  # Перезапускаем бот после обновления
+        latest_commit = await fetch_latest_commit()
+
+        if latest_commit and latest_commit != current_commit:
+            print("Обнаружены обновления. Перезапускаю бота...")
+            os.system("git pull https://github.com/p1gvo1ce/orion_bot.git")  # Подтягиваем изменения
+            os.system("python bot.py")  # Перезапуск бота
+            return  # Завершаем цикл после перезапуска
+        else:
+            print('нет новых версий')
+
         await asyncio.sleep(60)  # Проверяем каждую минуту
+
 
 async def main():
     conn = await check_and_initialize_main_db()
@@ -80,8 +105,9 @@ async def main():
         token = await request_token(conn)
 
     # Запускаем задачу асинхронно
-    asyncio.create_task(check_for_updates('/path/to/your/local/repo'))  # Замените на путь к вашему локальному репозиторию
+    asyncio.create_task(check_for_updates())  # Проверка обновлений в удалённом репозитории
     await run_bot(token, conn)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
