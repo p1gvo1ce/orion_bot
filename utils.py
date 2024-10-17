@@ -154,9 +154,11 @@ def load_credentials(file_path):
   "secret": "Twitch API Client Secret Code"
 }
     '''
-    with open(file_path, 'r') as file:
+    abs_file_path = os.path.join(os.path.dirname(__file__), file_path)
+    with open(abs_file_path, 'r') as file:
         credentials = json.load(file)
     return credentials['id'], credentials['secret']
+
 
 def get_access_token(client_id, client_secret):
     url = 'https://id.twitch.tv/oauth2/token'
