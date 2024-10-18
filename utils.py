@@ -13,10 +13,6 @@ from Modules.phrases import get_phrase
 intents = discord.Intents.all()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
-
-logger = logging.getLogger('discord')
-logger.setLevel(logging.INFO)
-
 log_dir = 'logs'
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
@@ -26,25 +22,34 @@ class CSVHandler(logging.Handler):
         super().__init__()
         self.filename = os.path.join(log_dir, f"{datetime.now().strftime('%Y_%m_%d')}.csv")
         self.file_exists = os.path.isfile(self.filename)
+        self.file = open(self.filename, mode='a', newline='', encoding='utf-8')  # Открываем файл заранее
+        self.writer = csv.writer(self.file)
+        if not self.file_exists:
+            self.writer.writerow(['Timestamp', 'Level', 'Message'])
+            self.file_exists = True
 
     def emit(self, record):
         log_entry = self.format(record)
-        with open(self.filename, mode='a', newline='', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            if not self.file_exists:
-                writer.writerow(['Timestamp', 'Level', 'Message'])
-                self.file_exists = True
-            writer.writerow([record.asctime, record.levelname, log_entry])
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.writer.writerow([timestamp, record.levelname, log_entry])
+        self.file.flush()  # Обязательно сбрасываем буфер
+
+    def close(self):
+        self.file.close()  # Закрываем файл при завершении работы
+        super().close()
+
+# Настройка логгера
+logger = logging.getLogger('discord')
+logger.setLevel(logging.INFO)
 
 csv_handler = CSVHandler()
-csv_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+csv_handler.setFormatter(logging.Formatter('%(message)s'))
 logger.addHandler(csv_handler)
 
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logger.addHandler(console_handler)
-
 
 intents = discord.Intents.all()
 intents.message_content = True
