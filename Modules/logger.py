@@ -200,7 +200,7 @@ async def log_joined_member(member, inviter_id, invite_code):
             for log_channel_id in log_channel_ids:
                 log_channel = member.guild.get_channel(log_channel_id)
                 if log_channel:
-                    embed = discord.Embed(color=discord.Color.green())
+                    embed = discord.Embed(color=discord.Color.from_str("#00FA9A"))
                     description = (
                         f"**{await get_phrase('New Member Joined', member.guild)}**\n"
                         f"**{await get_phrase('Member', member.guild)}**: {member.name}#{member.discriminator} "
@@ -249,7 +249,7 @@ async def log_member_left(member):
             for log_channel_id in log_channel_ids:
                 log_channel = member.guild.get_channel(log_channel_id)
                 if log_channel:
-                    embed = discord.Embed(color=discord.Color.from_str("#FF4500"))
+                    embed = discord.Embed(color=discord.Color.from_str("#8B0000"))
                     description = (
                         f"**{await get_phrase('Member Left', member.guild)}**\n"
                         f"**{await get_phrase('Name', member.guild)}**: {member.name}#{member.discriminator} "
@@ -292,7 +292,7 @@ async def log_member_muted(member, reason=None, duration=None):
             for log_channel_id in log_channel_ids:
                 log_channel = member.guild.get_channel(log_channel_id)
                 if log_channel:
-                    embed = discord.Embed(color=discord.Color.from_str("#FFA500"))
+                    embed = discord.Embed(color=discord.Color.from_str("#778899"))
                     description = (
                         f"**{await get_phrase('Member Muted', member.guild)}**\n"
                         f"**{await get_phrase('Member', member.guild)}**: {member.name}#{member.discriminator} "
@@ -332,7 +332,7 @@ async def log_member_unmuted(member, reason=None):
             for log_channel_id in log_channel_ids:
                 log_channel = member.guild.get_channel(log_channel_id)
                 if log_channel:
-                    embed = discord.Embed(color=discord.Color.from_str("#00FF00"))
+                    embed = discord.Embed(color=discord.Color.from_str("#FFFF00"))
                     description = (
                         f"**{await get_phrase('Member Unmuted', member.guild)}**\n"
                         f"**{await get_phrase('Member', member.guild)}**: {member.name}#{member.discriminator} "
@@ -377,7 +377,7 @@ async def log_member_banned(member, reason=None):
             for log_channel_id in log_channel_ids:
                 log_channel = member.guild.get_channel(log_channel_id)
                 if log_channel:
-                    embed = discord.Embed(color=discord.Color.from_str("#FF0000"))  # Цвет для бана
+                    embed = discord.Embed(color=discord.Color.from_str("#B22222"))
                     description = (
                         f"**{await get_phrase('Member Banned', member.guild)}**\n"
                         f"**{await get_phrase('Member', member.guild)}**: {member.name}#{member.discriminator} "
@@ -446,7 +446,7 @@ async def log_voice_state_update(member, before, after):
             for log_channel_id in log_channel_ids:
                 log_channel = member.guild.get_channel(log_channel_id)
                 if log_channel:
-                    embed = discord.Embed(color=discord.Color.from_str("#FFA500"))
+                    embed = discord.Embed(color=discord.Color.from_str("#4682B4"))
                     description = (
                         f"**{await get_phrase('Member', member.guild)}**: {member.name}#{member.discriminator} "
                         f"<@{member.id}>\n"
@@ -542,7 +542,7 @@ async def log_role_channel_event(event_type, before=None, after=None, guild=None
                             f"**{await get_phrase('Deleted At', guild)}**: {formatted_time}\n"
                         )
 
-                    embed = discord.Embed(color=discord.Color.from_str("#FF4500"))
+                    embed = discord.Embed(color=discord.Color.from_str("#6B8E23"))
                     embed.description = description
                     await log_channel.send(embed=embed)
 
