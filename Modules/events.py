@@ -88,12 +88,12 @@ async def on_member_ban(guild, user):
 
 async def on_member_update(before, after):
     if before.communication_disabled_until is None and after.communication_disabled_until is not None:
-        reason = "Muted by admin"  # Укажите причину мутации, если она известна
+        reason = "Muted by admin"
         duration = (after.communication_disabled_until - datetime.utcnow()).total_seconds()
         await log_member_muted(after, reason=reason, duration=duration)
 
     elif before.communication_disabled_until is not None and after.communication_disabled_until is None:
-        reason = "Unmuted by admin"  # Укажите причину размуты, если она известна
+        reason = "Unmuted by admin"
         await log_member_unmuted(after, reason=reason)
 
 

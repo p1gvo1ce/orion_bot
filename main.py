@@ -48,19 +48,8 @@ for event_type, handlers in listeners.items():
     else:
         bot.add_listener(globals()[handlers], event_type)
 
-async def update_code(repo_path):
-    try:
-        repo = git.Repo(repo_path)
-        origin = repo.remotes.origin
-        origin.pull()  # Получение обновлений
-        print("Код обновлен из репозитория.")
-        return True  # Обновление прошло успешно
-    except Exception as e:
-        print(f"Ошибка при обновлении кода: {e}")
-        return False  # Обновление не удалось
 
 async def run_bot(token, conn):
-    repo_path = '/path/to/your/local/repo'  # Замените на путь к вашему локальному репозиторию
     retry_count = 0
     while retry_count < 3:
         try:
@@ -70,8 +59,7 @@ async def run_bot(token, conn):
             if str(e) == "Improper token has been passed.":
                 token = request_token(conn)
             else:
-                if await update_code(repo_path):  # Проверяем обновления перед перезапуском
-                    os.system("python bot.py")  # Перезапускаем бот
+                os.system("python bot.py")
 
             retry_count += 1
             if retry_count >= 2:

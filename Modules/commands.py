@@ -300,7 +300,7 @@ async def get_logs(interaction: discord.Interaction, event_type: str = None, sta
 
     # Парсим даты с помощью функции parse_time
     start_time = parse_time(start_time, default_days_ago=365)
-    end_time = parse_time(end_time, default_days_ago=0)  # По умолчанию сейчас
+    end_time = parse_time(end_time, default_days_ago=0)
 
     # Получаем логи
     logs = await read_logs_from_analytics(

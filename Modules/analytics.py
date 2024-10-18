@@ -8,7 +8,6 @@ import os
 from datetime import datetime, timedelta, timezone
 from Modules.phrases import get_phrase
 
-# Подготовка данных о топ играх и построение графика
 async def plot_top_games(guild, top_games, days, granularity, game=None):
     db_path = os.path.join("Data", "game_activities.db")
     guild_id = guild.id
@@ -19,7 +18,6 @@ async def plot_top_games(guild, top_games, days, granularity, game=None):
     start_date_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
     end_date_str = end_date.strftime('%Y-%m-%d %H:%M:%S')
 
-    # Определяем формат для гранулярности
     if granularity == 'day':
         date_format = '%Y-%m-%d'
         interval = '1 day'
@@ -30,7 +28,6 @@ async def plot_top_games(guild, top_games, days, granularity, game=None):
         date_format = '%Y-%m'
         interval = '1 month'
 
-    # Данные для графика
     if game:
         top_games = [[game]]
     game_data = {}
@@ -49,10 +46,9 @@ async def plot_top_games(guild, top_games, days, granularity, game=None):
                 periods = await cursor.fetchall()
                 game_data[game_name] = periods
 
-    # Построение графика
     plt.figure(figsize=(10, 6))
     for game_name, periods in game_data.items():
-        if periods:  # Проверяем, есть ли данные
+        if periods:
             dates = [datetime.strptime(p[0], date_format) for p in periods]
             counts = [p[1] for p in periods]
             plt.plot(dates, counts, label=game_name)
@@ -62,20 +58,16 @@ async def plot_top_games(guild, top_games, days, granularity, game=None):
     plt.title(f'{await get_phrase("Top games activity on", guild)} {guild_name}')
     plt.legend()
 
-    # Ограничение количества меток на оси X
-    plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())  # Автоматический выбор интервалов
-    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))  # Форматирование дат
+    plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
 
-    # Ограничение максимального количества меток на оси X
     if days > 8:
-        plt.gca().xaxis.set_major_locator(MaxNLocator(nbins=8))  # Максимум 8 меток
+        plt.gca().xaxis.set_major_locator(MaxNLocator(nbins=8))
     else:
         plt.gca().xaxis.set_major_locator(MaxNLocator(nbins=days))
 
-    # Установка границ графика
     plt.xlim([start_date, end_date])
 
-    # Сохраняем график в байтовый буфер
     buf = io.BytesIO()
     plt.savefig(buf, format='png')
     buf.seek(0)
@@ -128,7 +120,7 @@ async def popularity_games_create_embed(game, days, granularity, guild):
         """
         async with conn.execute(query_total_unique_players) as cursor:
             total_unique_players = await cursor.fetchone()
-            total_unique_players = total_unique_players[0] if total_unique_players else 0  # Обработка случая, если выборка пуста
+            total_unique_players = total_unique_players[0] if total_unique_players else 0
 
     embed = discord.Embed(title=f"{game} Activity", color=discord.Color.blue())
     description = (f"{game} {await get_phrase('popularity chart for the last', guild)} {days} "

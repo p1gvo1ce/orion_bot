@@ -133,7 +133,7 @@ async def create_guild_table(guild_id):
 
 async def write_to_guild_settings_db(guild_id, param_name, param_value):
     db_path = os.path.join("Data", "main.db")
-    await create_guild_table(guild_id)  # Предполагаем, что эта функция тоже будет асинхронной
+    await create_guild_table(guild_id)
 
     async with aiosqlite.connect(db_path) as conn:
         table_name = f"guild_{guild_id}"
@@ -304,7 +304,7 @@ async def check_and_initialize_logs_db(guild_id, db_type="buffer"):
     if db_type == "buffer":
         db_path = os.path.join("Data", "logs.db")
     elif db_type == "analytics":
-        db_path = os.path.join("Data", "analytics.db")  # Указанный путь для аналитической БД
+        db_path = os.path.join("Data", "analytics.db")
     else:
         raise ValueError("Неверный тип базы данных. Используйте 'buffer' или 'analytics'.")
     if not os.path.exists("Data"):

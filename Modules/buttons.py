@@ -89,7 +89,6 @@ class FindInfoModal(discord.ui.Modal):
         self.activity_info = ''
         self.member = member
 
-        # Добавление полей ввода
         self.add_item(discord.ui.TextInput(
             label="Loading...",
             placeholder="Loading...",

@@ -22,7 +22,7 @@ class CSVHandler(logging.Handler):
         super().__init__()
         self.filename = os.path.join(log_dir, f"{datetime.now().strftime('%Y_%m_%d')}.csv")
         self.file_exists = os.path.isfile(self.filename)
-        self.file = open(self.filename, mode='a', newline='', encoding='utf-8')  # Открываем файл заранее
+        self.file = open(self.filename, mode='a', newline='', encoding='utf-8')
         self.writer = csv.writer(self.file)
         if not self.file_exists:
             self.writer.writerow(['Timestamp', 'Level', 'Message'])
@@ -32,10 +32,10 @@ class CSVHandler(logging.Handler):
         log_entry = self.format(record)
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.writer.writerow([timestamp, record.levelname, log_entry])
-        self.file.flush()  # Обязательно сбрасываем буфер
+        self.file.flush()
 
     def close(self):
-        self.file.close()  # Закрываем файл при завершении работы
+        self.file.close()
         super().close()
 
 # Настройка логгера
