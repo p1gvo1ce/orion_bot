@@ -12,7 +12,10 @@ from Modules.commands import (create_party_search_channel, game_popularity_chart
                               get_logs)
 from Modules.voice_channels_control import find_party_controller
 from Modules.role_control import game_role_reaction_add, game_role_reaction_remove
-from Modules.events import bot_start, join_from_invite, greetings_delete_greetings, start_copy_logs_to_analytics
+from Modules.events import (bot_start, join_from_invite, greetings_delete_greetings, start_copy_logs_to_analytics,
+                            on_guild_role_create, on_guild_role_update, on_guild_role_delete, on_guild_channel_create,
+                            on_guild_channel_update, on_guild_channel_delete, on_voice_state_update, on_member_ban,
+                            on_member_update)
 from Modules.logger import log_new_message, log_edited_message, log_deleted_message
 
 GITHUB_API_URL = "https://api.github.com/repos/p1gvo1ce/orion_bot/commits/master"
@@ -22,12 +25,20 @@ tracemalloc.start()
 listeners = {
     'on_ready': ['bot_start', 'start_copy_logs_to_analytics'],
     'on_member_join': ['join_from_invite'],
-    'on_voice_state_update': ['find_party_controller'],
+    'on_voice_state_update': ['on_voice_state_update', 'find_party_controller'],
     'on_raw_reaction_add': ['game_role_reaction_add'],
     'on_raw_reaction_remove': ['game_role_reaction_remove'],
     'on_message': ['greetings_delete_greetings', 'log_new_message'],
     'on_message_edit': ['log_edited_message'],
-    'on_message_delete': ['log_deleted_message']
+    'on_message_delete': ['log_deleted_message'],
+    'on_guild_role_create': ['on_guild_role_create'],
+    'on_guild_role_update': ['on_guild_role_update'],
+    'on_guild_role_delete': ['on_guild_role_delete'],
+    'on_guild_channel_create': ['on_guild_channel_create'],
+    'on_guild_channel_update': ['on_guild_channel_update'],
+    'on_guild_channel_delete': ['on_guild_channel_delete'],
+    'on_member_ban': ['on_member_ban'],
+    'on_member_update': ['on_member_update']
 }
 
 for event_type, handlers in listeners.items():

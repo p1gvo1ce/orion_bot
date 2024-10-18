@@ -328,6 +328,254 @@ If this is not possible for some activity, then you need to contact the owners (
     'input': {
         'ru': 'ввод',
         'en': 'input'
+    },
+    'New Member Joined': {
+        'ru': 'Участник присоединился',
+        'en': 'New Member Joined'
+    },
+    'Member': {
+        'ru': 'Участникк',
+        'en': 'Member'
+    },
+    'Invited by': {
+        'ru': 'Пригласил',
+        'en': 'Invited by'
+    },
+    'Invite Code': {
+        'ru': 'Код приглашения',
+        'en': 'Invite Code'
+    },
+    'Joined At': {
+        'ru': 'Присоединился',
+        'en': 'Joined At'
+    },
+    'Member Left': {
+        'ru': 'Участник ушел',
+        'en': 'Member Left'
+    },
+    'Name': {
+        'ru': 'Имя',
+        'en': 'Name'
+    },
+    'Left At': {
+        'ru': 'Ушел',
+        'en': 'Left At'
+    },
+    'Member Muted': {
+        'ru': 'Участник получил mute',
+        'en': 'Member Muted'
+    },
+    'Muted At': {
+        'ru': 'Лишен голоса',
+        'en': 'Muted At'
+    },
+    'Reason': {
+        'ru': 'Причина',
+        'en': 'Reason'
+    },
+    'Duration': {
+        'ru': 'Длительность',
+        'en': 'Duration'
+    },
+    'Member Unmuted': {
+        'ru': 'С участника снят mute',
+        'en': 'Member Unmuted'
+    },
+    'Unmuted At': {
+        'ru': 'Mute снят',
+        'en': 'Unmuted At'
+    },
+    'Member Banned': {
+        'ru': 'Участник забанен',
+        'en': 'Member Banned'
+    },
+    'Banned At': {
+        'ru': 'Забанен',
+        'en': 'Banned At'
+    },
+    'Joined Voice Channel': {
+        'ru': 'Подключение к голосовому каналу',
+        'en': 'Joined Voice Channel'
+    },
+    'Left Voice Channel': {
+        'ru': 'Отключение от голосового канала',
+        'en': 'Left Voice Channel'
+    },
+    'Switched Voice Channels': {
+        'ru': 'Смена голосового канала',
+        'en': 'Switched Voice Channels'
+    },
+    'Muted Microphone': {
+        'ru': 'Выключение микрофона',
+        'en': 'Muted Microphone'
+    },
+    'Unmuted Microphone': {
+        'ru': 'Включение микрофона',
+        'en': 'Unmuted Microphone'
+    },
+    'Deafened': {
+        'ru': 'Выключение звука',
+        'en': 'Deafened'
+    },
+    'Undeafened': {
+        'ru': 'Включение звука',
+        'en': 'Undeafened'
+    },
+    'Voice Channel': {
+        'ru': 'Голосовой канал',
+        'en': 'Voice Channel'
+    },
+    'Occurred At': {
+        'ru': 'Время события',
+        'en': 'Occurred At'
+    },
+    'Role Created': {
+        'ru': 'Создана роль',
+        'en': 'Role Created'
+    },
+    'Role Name': {
+        'ru': 'Название роли',
+        'en': 'Role Name'
+    },
+    'Role ID': {
+        'ru': 'ID роли',
+        'en': 'Role ID'
+    },
+    'Role Updated': {
+        'ru': 'Роль обновлена',
+        'en': 'Role Updated'
+    },
+    'Before': {
+        'ru': 'До',
+        'en': 'Before'
+    },
+    'After': {
+        'ru': 'После',
+        'en': 'After'
+    },
+    'Updated At': {
+        'ru': 'Время обновления',
+        'en': 'Updated At'
+    },
+    'Role Deleted': {
+        'ru': 'Роль удалена',
+        'en': 'Role Deleted'
+    },
+    'Channel Created': {
+        'ru': 'Создан канал',
+        'en': 'Channel Created'
+    },
+    'Channel Name': {
+        'ru': 'Название канала',
+        'en': 'Channel Name'
+    },
+    'Channel ID': {
+        'ru': 'ID канала',
+        'en': 'Channel ID'
+    },
+    'Channel Updated': {
+        'ru': 'Канал обновлен',
+        'en': 'Channel Updated'
+    },
+    'Channel Deleted': {
+        'ru': 'Канал удален',
+        'en': 'Channel Deleted'
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
+    },
+    '': {
+        'ru': '',
+        'en': ''
     }
 }
 

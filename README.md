@@ -20,9 +20,6 @@ Implemented functionality:
   - editing messages
   - deleting messages
   - sending messages
-
-In development:
-- Creating a system for logging events on the server (
   - joining participants to the server
   - leaving participants from the server
   - banning participants
@@ -33,7 +30,9 @@ In development:
   - connecting to voice channels
   - disconnecting from voice channels
   - switching to other voice channels
-  )
+
+In development:
+- Detailing existing logs
 - Creating general notes about users available to server moderators
 - Assigning roles when connecting depending on the source of the invitation
 - Switching bot messages to embed where allowed
@@ -63,9 +62,6 @@ In development:
     - редактирование сообщений
     - удаление сообщений
     - отправка сообщений
-
-В разработке:
-- Создание системы логирования событий на сервере (
     - присоединение участников к серверу
     - уход участников с сервера
     - бан участников
@@ -78,7 +74,9 @@ In development:
     - подключение к голосовым каналам
     - отключение от голосовых каналов
     - переключение в другие голосовые каналы
-  )
+
+В разработке:
+- Детализация существующих логов
 - Создание общих заметок о пользователях доступные для модераторов сервера
 - Присвоение ролей при подключении в зависимости от источника приглашения
 - Переход сообщений бота на embed там, где это допустимо
