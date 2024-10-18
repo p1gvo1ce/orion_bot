@@ -77,25 +77,6 @@ async def fetch_latest_commit():
                 print(f"Ошибка при доступе к GitHub API: {response.status}")
                 return None
 
-
-async def check_for_updates():
-    await bot.wait_until_ready()
-    current_commit = await fetch_latest_commit()
-
-    while not bot.is_closed():
-        latest_commit = await fetch_latest_commit()
-
-        if latest_commit and latest_commit != current_commit:
-            print("Обнаружены обновления. Перезапускаю бота...")
-            os.system("git pull https://github.com/p1gvo1ce/orion_bot.git")  # Подтягиваем изменения
-            os.system("python bot.py")  # Перезапуск бота
-            return  # Завершаем цикл после перезапуска
-        else:
-            print('нет новых версий')
-
-        await asyncio.sleep(60)  # Проверяем каждую минуту
-
-
 async def main():
     conn = await check_and_initialize_main_db()
     token = await get_token_from_db(conn)
@@ -103,9 +84,6 @@ async def main():
     if not token:
         print("Token not found.")
         token = await request_token(conn)
-
-    # Запускаем задачу асинхронно
-    asyncio.create_task(check_for_updates())  # Проверка обновлений в удалённом репозитории
     await run_bot(token, conn)
 
 
