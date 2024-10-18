@@ -42,6 +42,7 @@ async def log_new_message(message):
                     await log_channel.send(embed=embed)
 
     data = {
+        "find_tags": "сообщение, сообщения, написал, чат",
         "message": {
             "activity": str(message.activity),
             "application": str(message.application),
@@ -105,6 +106,7 @@ async def log_deleted_message(message):
                     await log_channel.send(embed=embed)
 
     data = {
+        "find_tags": "сообщение, сообщения, удалил, удалено",
         "message": {
             "id": str(message.id),
             "channel_id": str(message.channel.id),
@@ -163,6 +165,7 @@ async def log_edited_message(before, after):
                     await log_channel.send(embed=embed)
 
     data = {
+        "find_tags": "сообщение, сообщения, изменил, отредактировала, отредактированное, отредактированные",
         "message": {
             "id": str(after.id),
             "content_before": str(before.content),
@@ -213,6 +216,7 @@ async def log_joined_member(member, inviter_id, invite_code):
                     await log_channel.send(embed=embed)
 
     data = {
+        "find_tags": "пришел, пришёл, присоединился, присоединение",
         "member": {
             "id": str(member.id),
             "name": str(member.name),
@@ -260,6 +264,7 @@ async def log_member_left(member):
                     await log_channel.send(embed=embed)
 
     data = {
+        "find_tags": "ушел, ушёл, ушла, ушли, покинула, покинули, ливнула, ливнули",
         "member": {
             "id": str(member.id),
             "name": str(member.name),
@@ -305,6 +310,7 @@ async def log_member_muted(member, reason=None, duration=None):
                     await log_channel.send(embed=embed)
 
     data = {
+        "find_tags": "мут, мют, молчание, молчанку, молчанка",
         "member": {
             "id": str(member.id),
             "name": str(member.name),
@@ -344,6 +350,7 @@ async def log_member_unmuted(member, reason=None):
                     await log_channel.send(embed=embed)
 
     data = {
+        "find_tags": "размут, размьют, молчание, молчанку, молчанка",
         "member": {
             "id": str(member.id),
             "name": str(member.name),
@@ -389,6 +396,7 @@ async def log_member_banned(member, reason=None):
                     await log_channel.send(embed=embed)
 
     data = {
+        "find_tags": "бан, банан",
         "member": {
             "id": str(member.id),
             "name": str(member.name),
@@ -415,18 +423,22 @@ async def log_voice_state_update(member, before, after):
         formatted_time = utc_time.isoformat()
 
         event_description = None
+        find_tags = "голосовой, голосовые, войс, "
         if before.channel is None and after.channel is not None:
             # Присоединение к голосовому каналу
             event_description = f"**{await get_phrase('Joined Voice Channel', member.guild)}**"
             event_type = "voice_joined"
+            find_tags += "подключение, подключился, подключились, подключилась"
         elif before.channel is not None and after.channel is None:
             # Отключение от голосового канала
             event_description = f"**{await get_phrase('Left Voice Channel', member.guild)}**"
             event_type = "voice_left"
+            find_tags += "отключение, отключился, отключились, отключилась"
         elif before.channel != after.channel:
             # Переход между голосовыми каналами
             event_description = f"**{await get_phrase('Switched Voice Channels', member.guild)}**"
             event_type = "voice_switched"
+            find_tags += "смена, перешел, перешла, перешли"
         elif before.self_mute != after.self_mute:
             # Включение/выключение микрофона
             if after.self_mute:
@@ -434,6 +446,7 @@ async def log_voice_state_update(member, before, after):
             else:
                 event_description = f"**{await get_phrase('Unmuted Microphone', member.guild)}**"
             event_type = "voice_mute"
+            find_tags += "микрофон, мут, мьют"
         elif before.self_deaf != after.self_deaf:
             # Включение/выключение звука
             if after.self_deaf:
@@ -441,6 +454,7 @@ async def log_voice_state_update(member, before, after):
             else:
                 event_description = f"**{await get_phrase('Undeafened', member.guild)}**"
             event_type = "voice_deaf"
+            find_tags += "звук, уши, наушники, выключил, включил"
 
         if event_description and log_channel_ids:
             for log_channel_id in log_channel_ids:
@@ -458,6 +472,7 @@ async def log_voice_state_update(member, before, after):
                     await log_channel.send(embed=embed)
 
     data = {
+        "find_tags": find_tags,
         "member": {
             "id": str(member.id),
             "name": str(member.name),
@@ -492,7 +507,7 @@ async def log_role_channel_event(event_type, before=None, after=None, guild=None
 
         utc_time = datetime.utcnow() + timedelta(hours=utc_offset)
         formatted_time = utc_time.isoformat()
-
+        find_tags = ""
         if log_channel_ids:
             for log_channel_id in log_channel_ids:
                 log_channel = guild.get_channel(log_channel_id)
@@ -505,6 +520,7 @@ async def log_role_channel_event(event_type, before=None, after=None, guild=None
                             f"**{await get_phrase('Role ID', guild)}**: {role.id}\n"
                             f"**{await get_phrase('Created At', guild)}**: {formatted_time}\n"
                         )
+                        find_tags += "роль, роли, новая, новые, создание, создана, создала, создали"
                     elif event_type == "role_updated":
                         description = (
                             f"**{await get_phrase('Role Updated', guild)}**\n"
@@ -512,6 +528,7 @@ async def log_role_channel_event(event_type, before=None, after=None, guild=None
                             f"**{await get_phrase('After', guild)}**: {after.name} (ID: {after.id})\n"
                             f"**{await get_phrase('Updated At', guild)}**: {formatted_time}\n"
                         )
+                        find_tags += "роль, роли, изменение, ролей, изменения"
                     elif event_type == "role_deleted":
                         description = (
                             f"**{await get_phrase('Role Deleted', guild)}**\n"
@@ -519,6 +536,7 @@ async def log_role_channel_event(event_type, before=None, after=None, guild=None
                             f"**{await get_phrase('Role ID', guild)}**: {before.id}\n"
                             f"**{await get_phrase('Deleted At', guild)}**: {formatted_time}\n"
                         )
+                        find_tags += "роли, роли, ролей, удаление, удалили"
                     elif event_type == "channel_created":
                         channel = after
                         description = (
@@ -527,6 +545,7 @@ async def log_role_channel_event(event_type, before=None, after=None, guild=None
                             f"**{await get_phrase('Channel ID', guild)}**: {channel.id}\n"
                             f"**{await get_phrase('Created At', guild)}**: {formatted_time}\n"
                         )
+                        find_tags += "каналы, созданы, новый, новые"
                     elif event_type == "channel_updated":
                         description = (
                             f"**{await get_phrase('Channel Updated', guild)}**\n"
@@ -534,6 +553,7 @@ async def log_role_channel_event(event_type, before=None, after=None, guild=None
                             f"**{await get_phrase('After', guild)}**: {after.name} (ID: {after.id})\n"
                             f"**{await get_phrase('Updated At', guild)}**: {formatted_time}\n"
                         )
+                        find_tags += "каналы, изменение, изменения, изменены, обновление, обновлены"
                     elif event_type == "channel_deleted":
                         description = (
                             f"**{await get_phrase('Channel Deleted', guild)}**\n"
@@ -541,12 +561,14 @@ async def log_role_channel_event(event_type, before=None, after=None, guild=None
                             f"**{await get_phrase('Channel ID', guild)}**: {before.id}\n"
                             f"**{await get_phrase('Deleted At', guild)}**: {formatted_time}\n"
                         )
+                        find_tags += "канал, каналы, удаление, удалены, удалено, удалили"
 
                     embed = discord.Embed(color=discord.Color.from_str("#6B8E23"))
                     embed.description = description
                     await log_channel.send(embed=embed)
 
     data = {
+        "find_tags": find_tags,
         "event_type": event_type,
         "before": {
             "name": before.name if before else None,
