@@ -480,6 +480,10 @@ If this is not possible for some activity, then you need to contact the owners (
     'Channel Deleted': {
         'ru': 'Канал удален',
         'en': 'Channel Deleted'
+    },
+    'Command error': {
+        'ru': 'Произошла ошибка, либо недостаточно прав для выполнения команды',
+        'en': 'An error occurred or you do not have sufficient rights to execute the command.'
     }
 }
 

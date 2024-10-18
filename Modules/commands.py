@@ -277,32 +277,39 @@ async def set_utc_time(interaction: discord.Interaction, utc_offset: int):
     await interaction.response.send_message(f"UTC time offset set to {utc_offset}.", ephemeral=True)
 
 
+def has_delete_messages_permission(interaction: discord.Interaction) -> bool:
+    if interaction.user.guild_permissions.administrator:
+        return True
+
+    user_roles = interaction.user.roles
+    for role in user_roles:
+        if role.permissions.manage_messages:
+            return True
+
+    return False
+
 @bot.tree.command(name="get_logs", description="[admin] Get logs from the analytics database.")
 @app_commands.describe(event_type="Type of event to filter", start_time="Start time for the logs",
                        end_time="End time for the logs", search_str="Search terms in data",
                        operator="Search operator: AND or OR")
-@app_commands.checks.has_permissions(administrator=True)
+@app_commands.check(has_delete_messages_permission)
 async def get_logs(interaction: discord.Interaction, event_type: str = None, start_time: str = None,
                    end_time: str = None, search_str: str = None, operator: str = 'AND'):
     ephemeral_response = await interaction.response.send_message("Loading...", ephemeral=True)
     guild_id = interaction.guild.id
     start_time_str = start_time
     end_time_str = end_time
-    # Проверяем, включено ли логирование
     logging_status = await read_from_guild_settings_db(guild_id, "logging_system")
     if not (logging_status and logging_status[0] == 'on'):
         await interaction.edit_original_response(content = "Logging system is turned off.")
         #await interaction.response.send_message("Logging system is turned off.", ephemeral=True)
         return
-    # Получаем смещение UTC
     utc_offset_data = await read_from_guild_settings_db(guild_id, "utc_time_offset")
     utc_offset = int(utc_offset_data[0]) if utc_offset_data else 0
 
-    # Парсим даты с помощью функции parse_time
     start_time = parse_time(start_time, default_days_ago=365)
     end_time = parse_time(end_time, default_days_ago=0)
 
-    # Получаем логи
     logs = await read_logs_from_analytics(
         guild_id=guild_id,
         event_type=event_type,
@@ -336,7 +343,6 @@ async def get_logs(interaction: discord.Interaction, event_type: str = None, sta
                                                      f"{await get_phrase('search', interaction.guild)} {search_str}\n"
                                                      f"{await get_phrase('operator', interaction.guild)} {operator}\n")
 
-    # Создаем ветку (thread)
     thread = await initial_message.create_thread(name="Logs Thread", auto_archive_duration=60)
 
     def decode_misencoded_string(input_string: str) -> str:
@@ -345,7 +351,6 @@ async def get_logs(interaction: discord.Interaction, event_type: str = None, sta
         except (UnicodeEncodeError, UnicodeDecodeError):
             return input_string
 
-    # Форматируем и отправляем логи
     for log in sorted(logs, key=lambda x: x['date_time']):
         log_time = datetime.fromisoformat(log["date_time"]) + timedelta(hours=utc_offset)
         formatted_time = log_time.strftime("%Y-%m-%d %H:%M:%S")
@@ -359,5 +364,9 @@ async def get_logs(interaction: discord.Interaction, event_type: str = None, sta
         embed = discord.Embed(description=description, color=discord.Color.from_str("#EE82EE"))
         await thread.send(embed=embed)
 
-    # Обновляем начальное сообщение только один раз после всех логов
     await interaction.edit_original_response(content="Done.")
+
+@bot.tree.error
+async def on_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    if isinstance(error, app_commands.CheckFailure):
+        await interaction.response.send_message(await get_phrase('Command error', interaction.guild), ephemeral=True)
