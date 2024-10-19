@@ -87,7 +87,11 @@ async def find_party_controller(member, before, after):
                 manage_permissions=True
             )
             await temp_channel.set_permissions(member, overwrite=overwrite)
-            await member.move_to(temp_channel)
+            if member.voice and member.voice.channel:
+                await member.move_to(temp_channel)
+            else:
+                await temp_channel.delete()
+                return
 
             temp_channels = load_temp_channels()
             temp_channels[str(temp_channel.id)] = {"guild_id": guild_id}
