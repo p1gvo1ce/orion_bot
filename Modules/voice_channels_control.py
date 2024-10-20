@@ -44,6 +44,7 @@ async def find_party_controller(member, before, after):
     guild_id = member.guild.id
     guild = member.guild
     channel_name = member.nick if member.nick else member.name
+    find_message = None
     if after.channel and after.channel != before.channel:
         voice_channel_id = after.channel.id
 
@@ -51,20 +52,6 @@ async def find_party_controller(member, before, after):
         search_voice_channel_ids = [clean_channel_id(id_str) for id_str in search_voice_channel_ids]
 
         if voice_channel_id in search_voice_channel_ids:
-
-            for activity in member.activities:
-                if activity.type == discord.ActivityType.playing:
-                    role_name = activity.name
-                    role = discord.utils.get(after.channel.guild.roles, name=role_name)
-                    channel_name = activity.name
-                    is_valid_game = is_game_valid(activity.name)
-                    if role is None and is_valid_game:
-                        random_color = random.randint(0, 0xFFFFFF)
-                        role = await after.channel.guild.create_role(name=role_name, color=discord.Color(random_color))
-                        await add_game_in_game_roles_channel(role, after.channel.guild)
-
-                    if role not in member.roles and is_valid_game:
-                        await member.add_roles(role)
             member_data = await read_member_data_from_db(member, 'voice_channel_name')
             if member_data:
                 channel_name = member_data['data']
@@ -92,34 +79,47 @@ async def find_party_controller(member, before, after):
             else:
                 await temp_channel.delete()
                 return
+            for activity in member.activities:
+                if activity.type == discord.ActivityType.playing:
+                    role_name = activity.name
+                    role = discord.utils.get(after.channel.guild.roles, name=role_name)
+                    is_valid_game = is_game_valid(activity.name)
+                    if role is None and is_valid_game:
+                        random_color = random.randint(0, 0xFFFFFF)
+                        role = await after.channel.guild.create_role(name=role_name, color=discord.Color(random_color))
+                        await add_game_in_game_roles_channel(role, after.channel.guild)
+
+                    if role not in member.roles and is_valid_game:
+                        await member.add_roles(role)
 
             temp_channels = load_temp_channels()
             temp_channels[str(temp_channel.id)] = {"guild_id": guild_id}
             save_temp_channels(temp_channels)
-            for activity in member.activities:
-                if activity.type == discord.ActivityType.playing:
-                    search_text_channel_ids = await read_from_guild_settings_db(guild_id, "party_find_text_channel_id")
-                    search_text_channel_ids = [clean_channel_id(id_str) for id_str in search_text_channel_ids]
+            if member.voice and member.voice.channel:
+                for activity in member.activities:
+                    if activity.type == discord.ActivityType.playing:
+                        search_text_channel_ids = await read_from_guild_settings_db(guild_id, "party_find_text_channel_id")
+                        search_text_channel_ids = [clean_channel_id(id_str) for id_str in search_text_channel_ids]
 
-                    invite = await temp_channel.create_invite(max_age=3600, max_uses=99)
+                        invite = await temp_channel.create_invite(max_age=3600, max_uses=99)
 
-                    for text_channel_id in search_text_channel_ids:
-                        text_channel = member.guild.get_channel(text_channel_id)
-                        if text_channel:
-                            find_message = await text_channel.send(
-                                content=f"{member.mention} {await get_phrase('looking for a company', guild)} "
-                                        f"{temp_channel.mention}.\n"
-                                        f"## <@&{role.id}>"
-                            )
+                        for text_channel_id in search_text_channel_ids:
+                            text_channel = member.guild.get_channel(text_channel_id)
+                            if text_channel:
+                                find_message = await text_channel.send(
+                                    content=f"{member.mention} {await get_phrase('looking for a company', guild)} "
+                                            f"{temp_channel.mention}.\n"
+                                            f"## <@&{role.id}>"
+                                )
 
-                            invite_data = {"invite": invite.url}
-                            await write_to_buttons_db(guild.id, find_message.id, "JoinButton", invite_data, member.id)
-                            join_button_view = JoinButton(invite, guild_id, activity, member.id)
-                            await join_button_view.initialize_buttons()
-                            await find_message.edit(view=join_button_view)
-                            break
+                                invite_data = {"invite": invite.url}
+                                await write_to_buttons_db(guild.id, find_message.id, "JoinButton", invite_data, member.id)
+                                join_button_view = JoinButton(invite, guild_id, activity, member.id)
+                                await join_button_view.initialize_buttons()
+                                await find_message.edit(view=join_button_view)
+                                break
 
-                    asyncio.create_task(check_member_in_channel(member, temp_channel, find_message, invite))
+                        asyncio.create_task(check_member_in_channel(member, temp_channel, find_message, invite))
 
     if before.channel and before.channel != after.channel:
         temp_channels = load_temp_channels()
@@ -128,8 +128,8 @@ async def find_party_controller(member, before, after):
                 await before.channel.delete()
                 del temp_channels[str(before.channel.id)]
                 save_temp_channels(temp_channels)
-
-        await find_message_delete(before.channel.guild, member)
+        if find_message:
+            await find_message_delete(before.channel.guild, member)
 
 
 async def find_message_delete(guild, member):
