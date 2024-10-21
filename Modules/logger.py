@@ -3,7 +3,6 @@ import discord
 from datetime import datetime, timedelta
 
 from Modules.db_control import log_event_to_db, read_from_guild_settings_db
-from main import event_type
 from utils import clean_channel_id
 from Modules.phrases import get_phrase
 
