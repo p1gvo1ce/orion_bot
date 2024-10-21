@@ -3,6 +3,7 @@ import discord
 from datetime import datetime, timedelta
 
 from Modules.db_control import log_event_to_db, read_from_guild_settings_db
+from main import event_type
 from utils import clean_channel_id
 from Modules.phrases import get_phrase
 
@@ -421,7 +422,7 @@ async def log_voice_state_update(member, before, after):
 
         utc_time = datetime.utcnow() + timedelta(hours=utc_offset)
         formatted_time = utc_time.isoformat()
-
+        event_type = ''
         event_description = None
         find_tags = "голосовой, голосовые, войс, "
         if before.channel is None and after.channel is not None:
