@@ -422,6 +422,7 @@ async def log_voice_state_update(member, before, after):
         utc_time = datetime.utcnow() + timedelta(hours=utc_offset)
         formatted_time = utc_time.isoformat()
         event_type = ''
+
         event_description = None
         find_tags = "голосовой, голосовые, войс, "
         if before.channel is None and after.channel is not None:
