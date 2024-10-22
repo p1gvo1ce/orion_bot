@@ -55,7 +55,7 @@ async def plot_top_games(guild, top_games, days, granularity, game=None):
     plt.legend()
     plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
     plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-    plt.gca().xaxis.set_major_locator(MaxNLocator(nbins=max(8, days)))
+    plt.gca().xaxis.set_major_locator(MaxNLocator(nbins=min(8, days)))
     plt.xlim([start_date, end_date])
 
     buf = io.BytesIO()
