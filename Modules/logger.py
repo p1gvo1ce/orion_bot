@@ -2,7 +2,7 @@ import json
 import discord
 from datetime import datetime, timedelta
 
-from Modules.db_control import log_event_to_db, read_from_guild_settings_db
+from Modules.db_control import log_event_to_db, read_from_guild_settings_db, write_to_members_db, read_member_data_from_db
 from utils import clean_channel_id
 from Modules.phrases import get_phrase
 
@@ -705,6 +705,79 @@ async def log_voice_state_update(member, before, after):
     }
     await log_event_to_db(guild_id, event_type, data)
 
+
+async def check_and_log_channel_changes(guild, before, after, event_type):
+    changes = {}
+
+    # Проверяем изменения разрешений
+    previous_permissions = before.overwrites
+    current_permissions = after.overwrites
+
+    # Если разрешения изменились, добавляем их в изменения
+    if previous_permissions != current_permissions:
+        changes['permissions'] = (previous_permissions, current_permissions)
+
+    # Записываем текущие разрешения в базу данных
+    current_channel_data = {}
+    for role in current_permissions:
+        overwrite = current_permissions[role]
+        current_channel_data[role.id] = {
+            'read_messages': overwrite.read_messages,
+            'send_messages': overwrite.send_messages,
+            'manage_messages': overwrite.manage_messages,
+            'manage_channels': overwrite.manage_channels,
+            'connect': overwrite.connect,
+        }
+
+    await write_to_members_db(after, "channel_data", current_channel_data)
+
+    return changes
+
+
+async def check_and_log_role_changes(guild, before, after, event_type):
+    role_id = after.id if after else before.id
+    role_data = await read_member_data_from_db(role_id, "role_data")
+
+    # Текущие параметры роли
+    current_role_data = {
+        "name": after.name if after else before.name,
+        "permissions": str(after.permissions.value) if after else str(before.permissions.value),
+        "color": str(after.color) if after else str(before.color),
+        "position": after.position if after else before.position
+    }
+
+    if not role_data:
+        # Если данных о роли нет, добавляем их в базу
+        await write_to_members_db(after, "role_data", current_role_data)
+        return None  # Новая запись, нет изменений
+
+    # Сравниваем предыдущие и новые параметры
+    previous_role_data = role_data["data"]
+    changes = {}
+
+    # Проверяем изменения для каждого параметра
+    for key in current_role_data:
+        if current_role_data[key] != previous_role_data.get(key):
+            changes[key] = (previous_role_data.get(key), current_role_data[key])
+
+    # Проверка изменений в разрешениях
+    previous_permissions = previous_role_data.get("permissions")
+    current_permissions = current_role_data.get("permissions")
+
+    if previous_permissions != current_permissions:
+        changes['permissions'] = (previous_permissions, current_permissions)
+
+    if changes:
+        # Обновляем запись в базе данных
+        await write_to_members_db(after, "role_data", current_role_data)
+        # Возвращаем список изменений для логирования
+        return changes
+
+    return None  # Нет изменений
+
+
+
+
 async def log_role_channel_event(event_type, before=None, after=None, guild=None):
     if guild is None:
         return
@@ -722,68 +795,37 @@ async def log_role_channel_event(event_type, before=None, after=None, guild=None
 
         utc_time = datetime.utcnow() + timedelta(hours=utc_offset)
         formatted_time = utc_time.isoformat()
-        find_tags = ""
+
         if log_channel_ids:
             for log_channel_id in log_channel_ids:
                 log_channel = guild.get_channel(log_channel_id)
                 if log_channel:
-                    if event_type == "role_created":
-                        role = after
-                        description = (
-                            f"**{await get_phrase('Role Created', guild)}**\n"
-                            f"**{await get_phrase('Role Name', guild)}**: {role.name}\n"
-                            f"**{await get_phrase('Role ID', guild)}**: {role.id}\n"
-                            f"**{await get_phrase('Created At', guild)}**: {formatted_time}\n"
-                        )
-                        find_tags += "роль, роли, новая, новые, создание, создана, создала, создали"
-                    elif event_type == "role_updated":
-                        description = (
-                            f"**{await get_phrase('Role Updated', guild)}**\n"
-                            f"**{await get_phrase('Before', guild)}**: {before.name} (ID: {before.id})\n"
-                            f"**{await get_phrase('After', guild)}**: {after.name} (ID: {after.id})\n"
-                            f"**{await get_phrase('Updated At', guild)}**: {formatted_time}\n"
-                        )
-                        find_tags += "роль, роли, изменение, ролей, изменения"
-                    elif event_type == "role_deleted":
-                        description = (
-                            f"**{await get_phrase('Role Deleted', guild)}**\n"
-                            f"**{await get_phrase('Role Name', guild)}**: {before.name}\n"
-                            f"**{await get_phrase('Role ID', guild)}**: {before.id}\n"
-                            f"**{await get_phrase('Deleted At', guild)}**: {formatted_time}\n"
-                        )
-                        find_tags += "роли, роли, ролей, удаление, удалили"
-                    elif event_type == "channel_created":
-                        channel = after
-                        description = (
-                            f"**{await get_phrase('Channel Created', guild)}**\n"
-                            f"**{await get_phrase('Channel Name', guild)}**: {channel.name}\n"
-                            f"**{await get_phrase('Channel ID', guild)}**: {channel.id}\n"
-                            f"**{await get_phrase('Created At', guild)}**: {formatted_time}\n"
-                        )
-                        find_tags += "каналы, созданы, новый, новые"
-                    elif event_type == "channel_updated":
-                        description = (
-                            f"**{await get_phrase('Channel Updated', guild)}**\n"
-                            f"**{await get_phrase('Before', guild)}**: {before.name} (ID: {before.id})\n"
-                            f"**{await get_phrase('After', guild)}**: {after.name} (ID: {after.id})\n"
-                            f"**{await get_phrase('Updated At', guild)}**: {formatted_time}\n"
-                        )
-                        find_tags += "каналы, изменение, изменения, изменены, обновление, обновлены"
-                    elif event_type == "channel_deleted":
-                        description = (
-                            f"**{await get_phrase('Channel Deleted', guild)}**\n"
-                            f"**{await get_phrase('Channel Name', guild)}**: {before.name}\n"
-                            f"**{await get_phrase('Channel ID', guild)}**: {before.id}\n"
-                            f"**{await get_phrase('Deleted At', guild)}**: {formatted_time}\n"
-                        )
-                        find_tags += "канал, каналы, удаление, удалены, удалено, удалили"
+                    description = ""
+                    changes = None
+
+                    if event_type.startswith("role"):
+                        changes = await check_and_log_role_changes(guild, before, after, event_type)
+                    elif event_type.startswith("channel"):
+                        changes = await check_and_log_channel_changes(guild, before, after, event_type)
+
+                    if changes:
+                        changes_description = []
+                        for key, (previous, current) in changes.items():
+                            if key == "permissions":
+                                permission_changes = await format_permissions_changes(previous, current)
+                                if permission_changes:
+                                    changes_description.append(f"**Permissions**:\n{permission_changes}")
+                            else:
+                                changes_description.append(f"**{key.capitalize()}**: {previous} → {current}")
+
+                        if changes_description:  # Проверяем, есть ли изменения
+                            description += f"\n**{await get_phrase('Changes', guild)}**:\n" + "\n".join(changes_description)
 
                     embed = discord.Embed(color=discord.Color.from_str("#6B8E23"))
                     embed.description = description
                     await log_channel.send(embed=embed)
 
     data = {
-        "find_tags": find_tags,
         "event_type": event_type,
         "before": {
             "name": before.name if before else None,
@@ -798,3 +840,29 @@ async def log_role_channel_event(event_type, before=None, after=None, guild=None
         "event_time": str(formatted_time)
     }
     await log_event_to_db(guild_id, event_type, data)
+
+
+async def format_permissions_changes(previous_overwrites, current_overwrites):
+    if not current_overwrites:
+        return "Нет доступных данных"
+
+    changes_list = []
+    for role, current_overwrite in current_overwrites.items():
+        previous_overwrite = previous_overwrites.get(role)
+
+        # Если предыдущих данных нет, считаем, что параметры изменились
+        if previous_overwrite is None:
+            changes_list.append(f"{role.name}: {'✅' if current_overwrite.read_messages else '❌'} (новая роль)")
+            continue
+
+        # Сравниваем разрешения
+        perm_keys = ["read_messages", "send_messages", "manage_messages", "manage_channels", "connect"]
+        for perm in perm_keys:
+            current_value = getattr(current_overwrite, perm)
+            previous_value = getattr(previous_overwrite, perm)
+
+            # Если значение изменилось, добавляем его в список изменений
+            if current_value != previous_value:
+                changes_list.append(f"{role.name}: {perm}: {'✅' if current_value else '❌'}")
+
+    return "\n".join(changes_list) if changes_list else "Нет изменений в разрешениях"

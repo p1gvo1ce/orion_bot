@@ -243,29 +243,34 @@ async def write_to_members_db(member, option, data=None):
     db_path = os.path.join("Data", "members.db")
     await create_settings_table()
 
+    # Получаем member_id в зависимости от типа переданного аргумента
+    member_id = member if isinstance(member, int) else member.id
+
     async with aiosqlite.connect(db_path) as conn:
         await conn.execute("""
             INSERT INTO settings (member_id, option, data)
             VALUES (?, ?, ?)
             ON CONFLICT(member_id) DO UPDATE SET option = excluded.option, data = excluded.data
-        """, (member.id, option, json.dumps(data)))
+        """, (member_id, option, json.dumps(data)))
         await conn.commit()
-
 
 async def read_member_data_from_db(member, option):
     db_path = os.path.join("Data", "members.db")
     await create_settings_table()
 
+    # Получаем member_id в зависимости от типа переданного аргумента
+    member_id = member if isinstance(member, int) else member.id
+
     async with aiosqlite.connect(db_path) as conn:
         async with conn.execute("SELECT data FROM settings WHERE member_id = ? AND option = ?",
-                                (member.id, option)) as cursor:
+                                (member_id, option)) as cursor:
             result = await cursor.fetchone()
 
     if result:
         data_json = result[0]
         data = json.loads(data_json)
         return {
-            "member_id": member.id,
+            "member_id": member_id,
             "option": option,
             "data": data
         }
@@ -275,8 +280,11 @@ async def delete_member_data_from_db(member, option):
     db_path = os.path.join("Data", "members.db")
     await create_settings_table()
 
+    # Получаем member_id в зависимости от типа переданного аргумента
+    member_id = member if isinstance(member, int) else member.id
+
     async with aiosqlite.connect(db_path) as conn:
-        cursor = await conn.execute("DELETE FROM settings WHERE member_id = ? AND option = ?", (member.id, option))
+        await conn.execute("DELETE FROM settings WHERE member_id = ? AND option = ?", (member_id, option))
         await conn.commit()
 
 async def check_and_initialize_logs_db(guild_id, db_type="buffer"):
@@ -434,3 +442,61 @@ async def copy_logs_to_analytics(guilds):
 
             logger.info('DB COPIED ' + guild.name)
         await asyncio.sleep(300)
+
+
+async def create_channel_permissions_table():
+    db_path = os.path.join("Data", "channels.db")
+
+    async with aiosqlite.connect(db_path) as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS channel_permissions (
+                channel_id INTEGER,
+                role_id INTEGER,
+                permissions TEXT,
+                PRIMARY KEY (channel_id, role_id)
+            )
+        """)
+        await conn.commit()
+
+async def write_channel_permissions_to_db(channel_id, role_id, permissions):
+    db_path = os.path.join("Data", "channels.db")
+    await create_channel_permissions_table()
+
+    async with aiosqlite.connect(db_path) as conn:
+        await conn.execute("""
+            INSERT INTO channel_permissions (channel_id, role_id, permissions)
+            VALUES (?, ?, ?)
+            ON CONFLICT(channel_id, role_id) DO UPDATE SET permissions = excluded.permissions
+        """, (channel_id, role_id, json.dumps(permissions)))
+        await conn.commit()
+
+async def get_saved_channel_permissions(channel_id):
+    db_path = os.path.join("Data", "channels.db")
+    await create_channel_permissions_table()
+
+    saved_permissions = {}
+
+    async with aiosqlite.connect(db_path) as conn:
+        async with conn.execute("""
+            SELECT role_id, permissions FROM channel_permissions 
+            WHERE channel_id = ?
+        """, (channel_id,)) as cursor:
+            async for row in cursor:
+                role_id = row[0]
+                permissions_json = row[1]
+                permissions = json.loads(permissions_json)
+                saved_permissions[role_id] = permissions
+
+    return saved_permissions if saved_permissions else None
+
+
+async def delete_channel_permissions_from_db(channel_id, role_id):
+    db_path = os.path.join("Data", "channels.db")
+    await create_channel_permissions_table()
+
+    async with aiosqlite.connect(db_path) as conn:
+        await conn.execute("""
+            DELETE FROM channel_permissions 
+            WHERE channel_id = ? AND role_id = ?
+        """, (channel_id, role_id))
+        await conn.commit()
