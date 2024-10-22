@@ -484,6 +484,14 @@ If this is not possible for some activity, then you need to contact the owners (
     'Command error': {
         'ru': 'Произошла ошибка, либо недостаточно прав для выполнения команды',
         'en': 'An error occurred or you do not have sufficient rights to execute the command.'
+    },
+    'Automatic search is on': {
+        'ru': 'Автоматический поиск включен',
+        'en': 'Automatic search is on'
+    },
+    'Automatic search is off': {
+        'ru': 'Автоматический поиск выключен',
+        'en': 'Automatic search is off'
     }
 }
 

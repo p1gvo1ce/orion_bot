@@ -225,6 +225,27 @@ async def dont_update_roles(interaction: discord.Interaction, mode: str):
         ephemeral=True
     )
 
+@bot.tree.command(name="party_find_mode", description="[Global] Enable/disable automatic party search when connecting to a private channel")
+@app_commands.describe(mode="Mode (on, off)")
+async def party_find_mode(interaction: discord.Interaction, mode: str):
+    try:
+        await delete_member_data_from_db(interaction.user, 'party_find_mode')
+    except:
+        pass
+    await write_to_members_db(interaction.user, 'party_find_mode', mode)
+
+    embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+    if mode == 'on':
+        description = await get_phrase('Automatic search is on', interaction.guild)
+    else:
+        description = await get_phrase('Automatic search is off', interaction.guild)
+    embed.description = description
+
+    await interaction.response.send_message(
+        embed=embed,
+        ephemeral=True
+    )
+
 @bot.tree.command(name="logging_system", description="[admin] Toggle logging system.")
 @app_commands.describe(mode="logging mode (on, off)")
 @app_commands.checks.has_permissions(administrator=True)
