@@ -3,9 +3,10 @@ import json
 import asyncio
 import os
 from datetime import datetime
+
 from Modules.db_control import (check_and_initialize_activities_db, create_server_table, insert_activity,
                                 read_member_data_from_db)
-from utils import get_logger, logger
+from utils import get_logger
 
 logger = get_logger()
 JSON_DIR = 'Modules/jsons'
@@ -13,7 +14,7 @@ JSON_DIR = 'Modules/jsons'
 def ensure_json_directory_exists():
     if not os.path.exists(JSON_DIR):
         os.makedirs(JSON_DIR)
-        print(f"Directory {JSON_DIR} created.")
+        logger.info(f"Directory {JSON_DIR} created.")
 
 def get_activity_file_path(guild_id):
     return os.path.join(JSON_DIR, f'last_activities_{guild_id}.json')
@@ -29,9 +30,8 @@ async def check_all_members(guild, db_conn):
     roles = guild.roles
 
     for member in guild.members:
-        member_data = await read_member_data_from_db(member, 'voice_channel_name')
-        if member_data and member_data.get('data') == 'off':
-            continue
+        member_data = await read_member_data_from_db(member, 'game_roles_update')
+
         for activity in member.activities:
             if activity.type == discord.ActivityType.playing:
                 activity_name = activity.name
@@ -46,6 +46,8 @@ async def check_all_members(guild, db_conn):
 
                 await insert_activity(db_conn, guild.id, member_id, activity_name)
 
+                if member_data and member_data.get('data') == 'off':
+                    continue
                 role = discord.utils.get(roles, name=activity_name)
                 if role:
                     if role not in member.roles:

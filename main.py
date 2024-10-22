@@ -5,6 +5,7 @@ import aiohttp
 
 from utils import get_bot
 bot = get_bot()
+
 from Modules.db_control import (check_and_initialize_main_db, get_token_from_db, request_token)
 from Modules.buttons import update_buttons_on_start
 from Modules.commands import (create_party_search_channel, game_popularity_chart, top_games_command, language,

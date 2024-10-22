@@ -10,23 +10,19 @@ from Modules.phrases import get_phrase
 
 async def plot_top_games(guild, top_games, days, granularity, game=None):
     db_path = os.path.join("Data", "game_activities.db")
-    guild_id = guild.id
-    guild_name = guild.name
-    table_name = f"guild_{guild_id}"
+    table_name = f"guild_{guild.id}"
     end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=days)
     start_date_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
     end_date_str = end_date.strftime('%Y-%m-%d %H:%M:%S')
 
-    if granularity == 'day':
-        date_format = '%Y-%m-%d'
-        interval = '1 day'
-    elif granularity == 'week':
-        date_format = '%Y-%W'
-        interval = '7 days'
-    else:  # granularity == 'month'
-        date_format = '%Y-%m'
-        interval = '1 month'
+    granularity_map = {
+        'day': ('%Y-%m-%d', '1 day'),
+        'week': ('%Y-%W', '7 days'),
+        'month': ('%Y-%m', '1 month')
+    }
+
+    date_format, interval = granularity_map.get(granularity, ('%Y-%m', '1 month'))
 
     if game:
         top_games = [[game]]
@@ -55,17 +51,11 @@ async def plot_top_games(guild, top_games, days, granularity, game=None):
 
     plt.xlabel(f'{await get_phrase("Time", guild)} ({granularity})')
     plt.ylabel(await get_phrase('Number of unique players', guild))
-    plt.title(f'{await get_phrase("Top games activity on", guild)} {guild_name}')
+    plt.title(f'{await get_phrase("Top games activity on", guild)} {guild.name}')
     plt.legend()
-
     plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
     plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-
-    if days > 8:
-        plt.gca().xaxis.set_major_locator(MaxNLocator(nbins=8))
-    else:
-        plt.gca().xaxis.set_major_locator(MaxNLocator(nbins=days))
-
+    plt.gca().xaxis.set_major_locator(MaxNLocator(nbins=max(8, days)))
     plt.xlim([start_date, end_date])
 
     buf = io.BytesIO()
@@ -129,5 +119,4 @@ async def popularity_games_create_embed(game, days, granularity, guild):
 
     embed.set_footer(text=f"{await get_phrase('Data based on', guild)} {total_unique_players} "
                           f"{await get_phrase('unique players over all time', guild)}")
-
     return embed

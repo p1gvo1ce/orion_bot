@@ -284,7 +284,6 @@ class JoinButton(discord.ui.View):
         )
 
     async def who_plays_button_callback(self, interaction: discord.Interaction):
-        member = interaction.user
         if self.game == 'None':
             embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
             description = await get_phrase('There is no information on this activity.', self.guild_id)

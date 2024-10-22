@@ -12,7 +12,8 @@ from Modules.phrases import get_phrase
 from Modules.analytics import top_games_create_embed, plot_top_games, popularity_games_create_embed
 from Modules.buttons import FindPartyWithoutActivity
 from Modules.text_channels_control import add_game_in_game_roles_channel
-from utils import get_bot, clean_channel_id, extract_fields, parse_time
+from utils import get_bot, clean_channel_id, parse_time
+from Modules.logger import extract_fields
 
 bot = get_bot()
 
@@ -22,20 +23,14 @@ bot = get_bot()
 @app_commands.describe()
 @app_commands.checks.has_permissions(administrator=True)
 async def create_party_search_channel(interaction: discord.Interaction):
-    guild = interaction.guild  # Получаем объект сервера (гильдии)
-
-    # Создаем текстовый канал для поиска группы
+    guild = interaction.guild
     text_channel = await guild.create_text_channel('party-search-text')
-
-    # Создаем голосовой канал для поиска группы
     voice_channel = await guild.create_voice_channel('party-search-voice')
 
-    # ID созданных каналов и ID сервера
     text_channel_id = text_channel.id
     voice_channel_id = voice_channel.id
     guild_id = guild.id
 
-    # Записываем информацию в базу данных
     await write_to_guild_settings_db(guild_id, "party_find_text_channel_id", f"id{text_channel_id}")
     await write_to_guild_settings_db(guild_id, "party_find_voice_channel_id", f"id{voice_channel_id}")
     find_message_without_activity = await text_channel.send(await get_phrase('Create a party search', guild))
@@ -44,7 +39,6 @@ async def create_party_search_channel(interaction: discord.Interaction):
     await modal.add_buttons()
     await find_message_without_activity.edit(view=modal)
 
-    # Отправляем сообщение о создании каналов
     await interaction.response.send_message(f"{await get_phrase('channels for party search created', guild)}:\n"
                                             f"{await get_phrase('Text Channel', guild)}: {text_channel.mention}\n"
                                             f"{await get_phrase('Voice Channel', guild)}: {voice_channel.mention}")
@@ -223,7 +217,7 @@ async def dont_update_roles(interaction: discord.Interaction, mode: str):
     if mode == 'on':
         description = await get_phrase('Game Roles Update Enabled', interaction.guild)
     else:
-        description = await get_phrase('Game role update disabled', interaction.guild)
+        description = await get_phrase('Game role Update disabled', interaction.guild)
     embed.description = description
 
     await interaction.response.send_message(
@@ -331,6 +325,7 @@ async def get_logs(interaction: discord.Interaction, event_type: str = None, sta
                     f"{await get_phrase('search', interaction.guild)} {search_str}"
         )
         return
+
     await interaction.edit_original_response(content="Loading...")
 
     initial_message = await interaction.channel.send(f"{await get_phrase('Fetching logs', interaction.guild)}. "

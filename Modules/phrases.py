@@ -229,9 +229,9 @@ If this is not possible for some activity, then you need to contact the owners (
         'ru': 'Включено обновление игровых ролей',
         'en': 'Game Roles Update Enabled'
     },
-    'Game role update disabled': {
+    'Game role Update disabled': {
         'ru': 'Выключено обновление игровых ролей',
-        'en': 'Game role update disabled'
+        'en': 'Game role Update disabled'
     },
     'New Message': {
         'ru': 'Новое сообщение',

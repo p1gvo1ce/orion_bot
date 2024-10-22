@@ -19,8 +19,6 @@ async def ensure_game_roles_channel(guild):
 
     return game_roles_channel
 
-'''await add_game_in_game_roles_channel({role}, guild) '''
-
 async def add_game_in_game_roles_channel(roles, guild):
     game_roles_channel = await ensure_game_roles_channel(guild)
 

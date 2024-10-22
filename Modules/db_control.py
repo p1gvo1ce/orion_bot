@@ -5,6 +5,9 @@ import asyncio
 import json
 from datetime import datetime, timedelta, timezone
 
+from utils import get_logger
+
+logger = get_logger()
 
 async def check_and_initialize_main_db():
     db_path = os.path.join("Data", "main.db")
@@ -73,9 +76,6 @@ async def insert_activity(conn, guild_id, member_id, activity_name):
     """, (current_time, prefixed_member_id, activity_name))
     await conn.commit()
 
-async def close_connection(conn):
-    await conn.close()
-
 async def get_recent_activity_members(guild_id, activity_name, minutes=10):
     db_path = os.path.join("Data", "game_activities.db")
     conn = await aiosqlite.connect(db_path)
@@ -98,7 +98,6 @@ async def get_top_games(guild_id, days, granularity):
     end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=days)
 
-    # Формат даты для SQLite
     start_date_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
     end_date_str = end_date.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -188,25 +187,6 @@ async def write_to_buttons_db(server_id, message_id, button_type, data=None, mem
             ON CONFLICT(message_id) DO UPDATE SET button_type = excluded.button_type, data = excluded.data, member_id = excluded.member_id
         """, (server_id, message_id, button_type, json.dumps(data), member_id))
         await conn.commit()
-
-async def read_button_data_from_db(message_id):
-    db_path = os.path.join("Data", "main.db")
-    await create_buttons_table()
-
-    async with aiosqlite.connect(db_path) as conn:
-        async with conn.execute("SELECT server_id, button_type, data, member_id FROM buttons WHERE message_id = ?", (message_id,)) as cursor:
-            result = await cursor.fetchone()
-
-    if result:
-        server_id, button_type, data_json, member_id = result
-        data = json.loads(data_json)
-        return {
-            "server_id": server_id,
-            "button_type": button_type,
-            "data": data,
-            "member_id": member_id
-        }
-    return None
 
 async def delete_button_data_from_db(message_id):
     db_path = os.path.join("Data", "main.db")
@@ -299,7 +279,6 @@ async def delete_member_data_from_db(member, option):
         cursor = await conn.execute("DELETE FROM settings WHERE member_id = ? AND option = ?", (member.id, option))
         await conn.commit()
 
-
 async def check_and_initialize_logs_db(guild_id, db_type="buffer"):
     if db_type == "buffer":
         db_path = os.path.join("Data", "logs.db")
@@ -308,7 +287,7 @@ async def check_and_initialize_logs_db(guild_id, db_type="buffer"):
     else:
         raise ValueError("Неверный тип базы данных. Используйте 'buffer' или 'analytics'.")
     if not os.path.exists("Data"):
-        os.makedirs("Data")  # Создаем папку, если её нет
+        os.makedirs("Data")
 
     conn = await aiosqlite.connect(db_path)
 
@@ -323,7 +302,6 @@ async def check_and_initialize_logs_db(guild_id, db_type="buffer"):
     ''')
 
     return conn
-
 
 async def log_event_to_db(guild_id, event_type, data):
     db_path = os.path.join("Data", "logs.db")
@@ -452,7 +430,7 @@ async def copy_logs_to_analytics(guilds):
                         await analytics_conn.commit()
 
             except Exception as e:
-                print(f"Error copying logs to analytics: {e}")
+                logger.info(f"Error copying logs to analytics: {e}")
 
-            print('DB COPIED ' + guild.name)
+            logger.info('DB COPIED ' + guild.name)
         await asyncio.sleep(300)
