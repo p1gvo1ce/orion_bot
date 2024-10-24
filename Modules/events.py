@@ -1,13 +1,14 @@
 import discord
 import asyncio
 from datetime import datetime
+from discord import Permissions
 
 from Modules.buttons import update_buttons_on_start
 from Modules.activity_monitoring import periodic_check_for_guilds
 from Modules.db_control import read_from_guild_settings_db, copy_logs_to_analytics
 from Modules.voice_channels_control import check_and_remove_nonexistent_channels
-from Modules.logger import (log_joined_member, log_role_channel_event, log_voice_state_update, log_member_banned,
-                            log_member_muted, log_member_left, log_member_unmuted)
+from Modules.logger import (log_joined_member, log_channel_event, log_voice_state_update, log_member_banned,
+                            log_member_muted, log_member_left, log_member_unmuted, log_role_event)
 
 from utils import get_bot
 
@@ -59,23 +60,28 @@ async def greetings_delete_greetings(message):
                 await message.delete()
                 await original_message.delete()
 
+async def get_actor(guild):
+    async for entry in guild.audit_logs(action=discord.AuditLogAction.channel_update, limit=1):
+        return entry.user  # Возвращаем пользователя, который совершил действие
+    return None  # Если ничего не найдено
+
 async def on_guild_role_create(role):
-    await log_role_channel_event("role_created", after=role, guild=role.guild)
+    await log_role_event("role_created", after=role, guild=role.guild)
 
 async def on_guild_role_update(before, after):
-    await log_role_channel_event("role_updated", before=before, after=after, guild=before.guild)
+    await log_role_event("role_updated", before=before, after=after, guild=before.guild, actor=await get_actor(before.guild))
 
 async def on_guild_role_delete(role):
-    await log_role_channel_event("role_deleted", before=role, guild=role.guild)
+    await log_role_event("role_deleted", before=role, guild=role.guild)
 
 async def on_guild_channel_create(channel):
-    await log_role_channel_event("channel_created", after=channel, guild=channel.guild)
+    await log_channel_event("channel_created", after=channel, guild=channel.guild)
 
 async def on_guild_channel_update(before, after):
-    await log_role_channel_event("channel_updated", before=before, after=after, guild=before.guild)
+    await log_channel_event("channel_updated", before=before, after=after, guild=before.guild, actor=await get_actor(before.guild))
 
 async def on_guild_channel_delete(channel):
-    await log_role_channel_event("channel_deleted", before=channel, guild=channel.guild)
+    await log_channel_event("channel_deleted", before=channel, guild=channel.guild)
 
 async def on_voice_state_update(member, before, after):
     await log_voice_state_update(member, before, after)

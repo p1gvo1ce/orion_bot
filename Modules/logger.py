@@ -1,9 +1,10 @@
 import json
 import discord
+import re
 from datetime import datetime, timedelta
 
 from Modules.db_control import log_event_to_db, read_from_guild_settings_db, write_to_members_db, read_member_data_from_db
-from utils import clean_channel_id
+from utils import clean_channel_id, extract_emoji
 from Modules.phrases import get_phrase
 
 
@@ -776,12 +777,35 @@ async def check_and_log_role_changes(guild, before, after, event_type):
     return None  # Нет изменений
 
 
+async def log_channel_event(event_type, before=None, after=None, guild=None, actor=None):
+    async def extract_role(line):
+        match = re.match(r"\*\*(.*?)\*\*:", line)
+        return match.group(1) if match else None
 
+    def remove_duplicates(seq):
+        seen = set()
+        result = []
+        for item in seq:
+            if item not in seen:
+                seen.add(item)
+                result.append(item)
+        return result
 
-async def log_role_channel_event(event_type, before=None, after=None, guild=None):
+    find_tags = ''
     if guild is None:
         return
+    if before is None:
+        if after is not None:
+            after_permissions = await format_permissions(after.overwrites)
+            await log_event_to_db(guild.id, event_type, {
+                "event_type": event_type,
+                "permissions": after_permissions,
+                "actor_id": str(actor.id) if actor else None,  # Добавляем ID участника или бота
+                "event_time": datetime.utcnow().isoformat()
+            })
+        return
 
+    description = ""
     guild_id = guild.id
     formatted_time = datetime.utcnow().isoformat()
 
@@ -800,7 +824,6 @@ async def log_role_channel_event(event_type, before=None, after=None, guild=None
             for log_channel_id in log_channel_ids:
                 log_channel = guild.get_channel(log_channel_id)
                 if log_channel:
-                    description = ""
                     changes = None
 
                     if event_type.startswith("role"):
@@ -811,21 +834,46 @@ async def log_role_channel_event(event_type, before=None, after=None, guild=None
                     if changes:
                         changes_description = []
                         for key, (previous, current) in changes.items():
+                            role = ''
                             if key == "permissions":
-                                permission_changes = await format_permissions_changes(previous, current)
-                                if permission_changes:
-                                    changes_description.append(f"**Permissions**:\n{permission_changes}")
+                                if isinstance(previous, dict) and isinstance(current, dict):
+                                    previous_permissions = (await format_permissions(previous)).splitlines()
+                                    current_permissions = (await format_permissions(current)).splitlines()
+
+                                    differences = []
+
+                                    for prev_line, curr_line in zip(previous_permissions, current_permissions):
+                                        role_re_find = await extract_role(curr_line)
+                                        if role_re_find:
+                                            role = role_re_find
+                                        if prev_line != curr_line:
+                                            differences.append(f"{prev_line.rstrip(', ')} → {(await extract_emoji(curr_line)).strip(':')}")
+                                            if role and role not in differences:
+                                                differences.insert(0, f'{role}\n')
+
+                                    differences = remove_duplicates(differences)
+                                    if differences:
+                                        changes_description.append(f"**{await get_phrase('Permissions', guild)}**:\n" + "\n".join(differences))
+                                    else:
+                                        changes_description.append(f"**{await get_phrase('Permissions', guild)}**:"
+                                                               f" {await get_phrase('no changes found', guild)}")
+                                else:
+                                    changes_description.append(f"**{await get_phrase('Permissions', guild)}**:"
+                                                               f" {await get_phrase('no changes found', guild)}")
                             else:
-                                changes_description.append(f"**{key.capitalize()}**: {previous} → {current}")
+                                changes_description.append(f"**{key.capitalize()}**: "
+                                                           f"{previous.rstrip(',')} → {(await extract_emoji(current)).strip(':')}")
+                        if changes_description:
+                            description += f"<@{actor.id}> ({actor.name})\n**{await get_phrase('Changes', guild)}** {after.mention}:\n" + "\n".join(
+                                changes_description)
 
-                        if changes_description:  # Проверяем, есть ли изменения
-                            description += f"\n**{await get_phrase('Changes', guild)}**:\n" + "\n".join(changes_description)
+                        embed = discord.Embed(color=discord.Color.from_str("#6B8E23"))
+                        embed.description = description
+                        await log_channel.send(embed=embed)
 
-                    embed = discord.Embed(color=discord.Color.from_str("#6B8E23"))
-                    embed.description = description
-                    await log_channel.send(embed=embed)
-
+    # Добавляем actor_id
     data = {
+        "find_tags": find_tags,
         "event_type": event_type,
         "before": {
             "name": before.name if before else None,
@@ -837,32 +885,202 @@ async def log_role_channel_event(event_type, before=None, after=None, guild=None
             "id": str(after.id) if after else None,
             "type": str(after.type) if isinstance(after, discord.abc.GuildChannel) else None,
         },
-        "event_time": str(formatted_time)
+        "permissions": description,
+        "event_time": str(formatted_time),
+        "actor_id": str(actor.id) if actor else None  # Сохраняем ID того, кто сделал изменения
+    }
+    await log_event_to_db(guild_id, event_type, data)
+
+async def format_permissions(overwrites):
+    if not overwrites:
+        return "Нет доступных данных"
+
+    permissions_list = []
+    for role, overwrite in overwrites.items():
+        # Получаем разрешения роли
+        role_permissions = role.permissions  # Это объект Permissions роли
+
+        # Получаем переопределения разрешений из объекта overwrite
+        perm_values = {
+            perm: getattr(overwrite, perm, getattr(role_permissions, perm))  # Используем значение из overwrite, если оно есть
+            for perm in PERMISSIONS  # Итерируемся по значениям PERMISSIONS
+            if hasattr(role_permissions, perm)  # Проверяем, существует ли атрибут в объекте Permissions
+        }
+
+        # Сформируйте строку с описанием разрешений
+        permissions_description = ",\n".join(
+            [f"{perm}: {'✅' if value else '❌'}" for perm, value in perm_values.items()]
+        )
+        permissions_list.append(f"**{role.name}**: {permissions_description}")
+
+    return "\n".join(permissions_list)
+
+async def log_role_event(event_type, before=None, after=None, guild=None, actor=None):
+    if guild is None:
+        return
+
+    description = ""
+    guild_id = guild.id
+    formatted_time = datetime.utcnow().isoformat()
+
+    logging_status = await read_from_guild_settings_db(guild_id, "logging_system")
+    if logging_status and logging_status[0] == 'on':
+        log_channel_ids = await read_from_guild_settings_db(guild_id, "log_channel_id")
+        log_channel_ids = [clean_channel_id(id_str) for id_str in log_channel_ids]
+
+        utc_offset_data = await read_from_guild_settings_db(guild_id, "utc_time_offset")
+        utc_offset = int(utc_offset_data[0]) if utc_offset_data else 0
+
+        utc_time = datetime.utcnow() + timedelta(hours=utc_offset)
+        formatted_time = utc_time.isoformat()
+
+        if log_channel_ids:
+            for log_channel_id in log_channel_ids:
+                log_channel = guild.get_channel(log_channel_id)
+                if log_channel:
+                    changes = None
+
+                    if event_type.startswith("role"):
+                        changes = await check_and_log_role_changes(guild, before, after, event_type)
+
+                    if changes:
+                        changes_description = []
+                        for key, (previous, current) in changes.items():
+                            if key == "permissions":
+                                if isinstance(previous, str) and isinstance(current, str):
+                                    previous_permissions = await format_role_permissions(before.permissions)
+                                    current_permissions = await format_role_permissions(after.permissions)
+                                    differences = await format_role_permissions_diff(before.permissions, after.permissions)
+                                    if differences:
+                                        changes_description.append(f"**{await get_phrase('Permissions', guild)}**:\n" + differences)
+                                    else:
+                                        changes_description.append(f"**{await get_phrase('Permissions', guild)}**: {await get_phrase('no changes found', guild)}")
+                            else:
+                                changes_description.append(f"**{key.capitalize()}**: {previous} → {current}")
+                        if changes_description:
+                            description += f"<@{actor.id}> ({actor.name})\n**{await get_phrase('Changes', guild)}** {after.mention}:\n" + "\n".join(changes_description)
+
+                        embed = discord.Embed(color=discord.Color.from_str("#6B8E23"))
+                        embed.description = description
+                        await log_channel.send(embed=embed)
+
+    data = {
+        "event_type": event_type,
+        "before": {
+            "name": before.name if before else None,
+            "id": str(before.id) if before else None,
+        },
+        "after": {
+            "name": after.name if after else None,
+            "id": str(after.id) if after else None,
+        },
+        "permissions": description,
+        "event_time": str(formatted_time),
+        "actor_id": str(actor.id) if actor else None  # Сохраняем ID того, кто сделал изменения
     }
     await log_event_to_db(guild_id, event_type, data)
 
 
-async def format_permissions_changes(previous_overwrites, current_overwrites):
-    if not current_overwrites:
+async def format_role_permissions(overwrites):
+    if not overwrites:
         return "Нет доступных данных"
 
-    changes_list = []
-    for role, current_overwrite in current_overwrites.items():
-        previous_overwrite = previous_overwrites.get(role)
+    permissions_list = []
+    for perm in PERMISSIONS:
+        value = getattr(overwrites, perm, None)
+        if isinstance(value, bool):
+            permissions_list.append(f"{perm}: {'✅' if value else '❌'}")
 
-        # Если предыдущих данных нет, считаем, что параметры изменились
-        if previous_overwrite is None:
-            changes_list.append(f"{role.name}: {'✅' if current_overwrite.read_messages else '❌'} (новая роль)")
-            continue
+    return "\n".join(permissions_list)
 
-        # Сравниваем разрешения
-        perm_keys = ["read_messages", "send_messages", "manage_messages", "manage_channels", "connect"]
-        for perm in perm_keys:
-            current_value = getattr(current_overwrite, perm)
-            previous_value = getattr(previous_overwrite, perm)
 
-            # Если значение изменилось, добавляем его в список изменений
-            if current_value != previous_value:
-                changes_list.append(f"{role.name}: {perm}: {'✅' if current_value else '❌'}")
+async def format_role_permissions_diff(previous_permissions, current_permissions):
+    differences = []
+    for perm in PERMISSIONS:
+        prev_value = getattr(previous_permissions, perm, None)
+        curr_value = getattr(current_permissions, perm, None)
+        if isinstance(prev_value, bool) and isinstance(curr_value, bool) and prev_value != curr_value:
+            differences.append(f"{perm}: {'✅' if prev_value else '❌'} → {'✅' if curr_value else '❌'}")
+    return "\n".join(differences)
 
-    return "\n".join(changes_list) if changes_list else "Нет изменений в разрешениях"
+
+
+PERMISSIONS = (
+    "DEFAULT_VALUE",
+    "VALID_FLAGS",
+    "add_reactions",
+    "administrator",
+    "advanced",
+    "all",
+    "all_channel",
+    "attach_files",
+    "ban_members",
+    "change_nickname",
+    "connect",
+    "create_events",
+    "create_expressions",
+    "create_instant_invite",
+    "create_polls",
+    "create_private_threads",
+    "create_public_threads",
+    "deafen_members",
+    "elevated",
+    "embed_links",
+    "events",
+    "external_emojis",
+    "external_stickers",
+    "general",
+    "handle_overwrite",
+    "is_strict_subset",
+    "is_strict_superset",
+    "is_subset",
+    "is_superset",
+    "kick_members",
+    "manage_channels",
+    "manage_emojis",
+    "manage_emojis_and_stickers",
+    "manage_events",
+    "manage_expressions",
+    "manage_guild",
+    "manage_messages",
+    "manage_nicknames",
+    "manage_permissions",
+    "manage_roles",
+    "manage_threads",
+    "manage_webhooks",
+    "membership",
+    "mention_everyone",
+    "moderate_members",
+    "move_members",
+    "mute_members",
+    "none",
+    "priority_speaker",
+    "read_message_history",
+    "read_messages",
+    "request_to_speak",
+    "send_messages",
+    "send_messages_in_threads",
+    "send_polls",
+    "send_tts_messages",
+    "send_voice_messages",
+    "speak",
+    "stage",
+    "stage_moderator",
+    "stream",
+    "text",
+    "update",
+    "use_application_commands",
+    "use_embedded_activities",
+    "use_external_apps",
+    "use_external_emojis",
+    "use_external_sounds",
+    "use_external_stickers",
+    "use_soundboard",
+    "use_voice_activation",
+    "value",
+    "view_audit_log",
+    "view_channel",
+    "view_creator_monetization_analytics",
+    "view_guild_insights",
+    "voice"
+)

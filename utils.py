@@ -3,6 +3,7 @@ from discord.ext import commands
 import logging
 import csv
 import os
+import re
 import json
 import requests
 from datetime import datetime, timedelta, timezone
@@ -174,3 +175,6 @@ def is_game_valid(game_name):
         return False
     else:
         raise Exception(f"Error: {response.status_code}, {response.text}")
+
+async def extract_emoji(text):
+    return ''.join(re.findall(r'[^\w\s,]', text))
