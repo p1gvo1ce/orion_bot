@@ -1,7 +1,10 @@
 import json
 import discord
 import re
+import os
 from datetime import datetime, timedelta
+from PIL import Image, ImageDraw, ImageFont, ImageColor
+import io
 
 from Modules.db_control import log_event_to_db, read_from_guild_settings_db, write_to_members_db, read_member_data_from_db
 from utils import clean_channel_id, extract_emoji
@@ -280,7 +283,7 @@ async def log_new_message(message):
                 "type": str(message.channel.type),
             },
             "content": str(message.content),
-            "created_at": str(formatted_time),  # Используем отформатированное время
+            "created_at": str(formatted_time),
             "edited_at": str(message.edited_at.isoformat() if message.edited_at else None),
         }
     }
@@ -642,22 +645,18 @@ async def log_voice_state_update(member, before, after):
         event_description = None
         find_tags = "голосовой, голосовые, войс, "
         if before.channel is None and after.channel is not None:
-            # Присоединение к голосовому каналу
             event_description = f"**{await get_phrase('Joined Voice Channel', member.guild)}**"
             event_type = "voice_joined"
             find_tags += "подключение, подключился, подключились, подключилась"
         elif before.channel is not None and after.channel is None:
-            # Отключение от голосового канала
             event_description = f"**{await get_phrase('Left Voice Channel', member.guild)}**"
             event_type = "voice_left"
             find_tags += "отключение, отключился, отключились, отключилась"
         elif before.channel != after.channel:
-            # Переход между голосовыми каналами
             event_description = f"**{await get_phrase('Switched Voice Channels', member.guild)}**"
             event_type = "voice_switched"
             find_tags += "смена, перешел, перешла, перешли"
         elif before.self_mute != after.self_mute:
-            # Включение/выключение микрофона
             if after.self_mute:
                 event_description = f"**{await get_phrase('Muted Microphone', member.guild)}**"
             else:
@@ -665,7 +664,6 @@ async def log_voice_state_update(member, before, after):
             event_type = "voice_mute"
             find_tags += "микрофон, мут, мьют"
         elif before.self_deaf != after.self_deaf:
-            # Включение/выключение звука
             if after.self_deaf:
                 event_description = f"**{await get_phrase('Deafened', member.guild)}**"
             else:
@@ -711,15 +709,12 @@ async def log_voice_state_update(member, before, after):
 async def check_and_log_channel_changes(guild, before, after, event_type):
     changes = {}
 
-    # Проверяем изменения разрешений
     previous_permissions = before.overwrites
     current_permissions = after.overwrites
 
-    # Если разрешения изменились, добавляем их в изменения
     if previous_permissions != current_permissions:
         changes['permissions'] = (previous_permissions, current_permissions)
 
-    # Записываем текущие разрешения в базу данных
     current_channel_data = {}
     for role in current_permissions:
         overwrite = current_permissions[role]
@@ -740,7 +735,6 @@ async def check_and_log_role_changes(guild, before, after, event_type):
     role_id = after.id if after else before.id
     role_data = await read_member_data_from_db(role_id, "role_data")
 
-    # Текущие параметры роли
     current_role_data = {
         "name": after.name if after else before.name,
         "permissions": str(after.permissions.value) if after else str(before.permissions.value),
@@ -749,20 +743,16 @@ async def check_and_log_role_changes(guild, before, after, event_type):
     }
 
     if not role_data:
-        # Если данных о роли нет, добавляем их в базу
         await write_to_members_db(after, "role_data", current_role_data)
-        return None  # Новая запись, нет изменений
+        return None
 
-    # Сравниваем предыдущие и новые параметры
     previous_role_data = role_data["data"]
     changes = {}
 
-    # Проверяем изменения для каждого параметра
     for key in current_role_data:
         if current_role_data[key] != previous_role_data.get(key):
             changes[key] = (previous_role_data.get(key), current_role_data[key])
 
-    # Проверка изменений в разрешениях
     previous_permissions = previous_role_data.get("permissions")
     current_permissions = current_role_data.get("permissions")
 
@@ -770,12 +760,10 @@ async def check_and_log_role_changes(guild, before, after, event_type):
         changes['permissions'] = (previous_permissions, current_permissions)
 
     if changes:
-        # Обновляем запись в базе данных
         await write_to_members_db(after, "role_data", current_role_data)
-        # Возвращаем список изменений для логирования
         return changes
 
-    return None  # Нет изменений
+    return None
 
 
 async def log_channel_event(event_type, before=None, after=None, guild=None, actor=None):
@@ -787,7 +775,7 @@ async def log_channel_event(event_type, before=None, after=None, guild=None, act
         seen = set()
         result = []
         for item in seq:
-            if item not in seen:
+            if item not in seen and not item.startswith('_'):
                 seen.add(item)
                 result.append(item)
         return result
@@ -816,42 +804,35 @@ async def log_channel_event(event_type, before=None, after=None, guild=None, act
                 if log_channel:
                     changes_description = []
 
-                    # Обработка случаев создания или удаления канала
                     if before is None and after is not None:
-                        # Канал был создан
                         description += f"{f"<@{actor.id}> ({actor.name})" if actor else ""}\n**{await get_phrase('Channel Created', guild)}**: {after.mention}"
                     elif before is not None and after is None:
-                        # Канал был удалён
                         description += f"{f"<@{actor.id}> ({actor.name})" if actor else ""}\n**{await get_phrase('Channel Deleted', guild)}**: {before.name}"
                     else:
-                        # Обработка изменений канала
                         changes = {}
 
-                        # Проверка изменения категории
                         if before.category != after.category:
                             previous = before.category.name if before.category else "None"
                             current = after.category.name if after.category else "None"
                             changes["category"] = (previous, current)
 
-                        # Проверка изменения названия
                         if before.name != after.name:
                             changes["name"] = (before.name, after.name)
 
-                        # Проверка изменения режима медленной отправки сообщений
                         if hasattr(before, 'slowmode_delay') and before.slowmode_delay != after.slowmode_delay:
                             changes["slowmode_delay"] = (before.slowmode_delay, after.slowmode_delay)
 
-                        # Проверка изменения возрастных ограничений
                         if hasattr(before, 'nsfw') and before.nsfw != after.nsfw:
                             changes["nsfw"] = (before.nsfw, after.nsfw)
 
-                        # Проверка изменения битрейта (для голосовых каналов)
                         if hasattr(before, 'bitrate') and before.bitrate != after.bitrate:
                             changes["bitrate"] = (before.bitrate, after.bitrate)
 
-                        # Проверка изменения лимита пользователей (для голосовых каналов)
                         if hasattr(before, 'user_limit') and before.user_limit != after.user_limit:
                             changes["user_limit"] = (before.user_limit, after.user_limit)
+
+                        if hasattr(before, 'overwrites') and before.overwrites != after.overwrites:
+                            changes["permissions"] = (before.overwrites, after.overwrites)
 
                         if changes:
                             for key, (previous, current) in changes.items():
@@ -871,16 +852,51 @@ async def log_channel_event(event_type, before=None, after=None, guild=None, act
                                     previous_value = "No limit" if previous == 0 else str(previous)
                                     current_value = "No limit" if current == 0 else str(current)
                                     changes_description.append(f"**{await get_phrase('User Limit', guild)}**: {previous_value} → {current_value}")
+                                elif key == "permissions":
+                                    previous_permissions = await format_permissions(previous)
+                                    current_permissions = await format_permissions(current)
+
+                                    differences = []
+                                    for role, overwrite in current.items():
+                                        if role in previous:
+                                            previous_overwrite = previous[role]
+                                            for perm in dir(overwrite):
+                                                if not perm.startswith('_') and perm in dir(previous_overwrite):
+                                                    previous_value = getattr(previous_overwrite, perm)
+                                                    current_value = getattr(overwrite, perm)
+                                                    if previous_value != current_value:
+                                                        perm_name = await get_phrase(perm, guild)
+                                                        differences.append(f"{role.name} - {perm_name}: {'✅' if previous_value else '❌'} → {'✅' if current_value else '❌'}")
+                                        else:
+                                            for perm in dir(overwrite):
+                                                if not perm.startswith('_'):
+                                                    value = getattr(overwrite, perm)
+                                                    if value is not None:
+                                                        perm_name = await get_phrase(perm, guild)
+                                                        differences.append(f"{role.name} - {perm_name}: {'❌'} → {'✅' if value else '❌'}")
+
+                                    if differences:
+                                        changes_description.append(f"**{await get_phrase('Permissions', guild)}**:" + "\n".join(differences))
+                                    else:
+                                        changes_description.append(f"**{await get_phrase('Permissions', guild)}**:"
+                                                                   f" {await get_phrase('no changes found', guild)}")
 
                             if changes_description:
                                 description += f"{f"<@{actor.id}> ({actor.name})" if actor else ""}\n**{await get_phrase('Changes', guild)}** {after.mention}:\n" + "\n".join(changes_description)
+
+                    description_lines = description.splitlines()
+                    filtered_lines = []
+                    for line in description_lines:
+                        if line.count('✅') == 2 or line.count('❌') == 2:
+                            continue
+                        filtered_lines.append(line)
+                    description = "\n".join(filtered_lines)
 
                     embed = discord.Embed(color=discord.Color.from_str("#6B8E23"))
                     embed.description = description
                     if description:
                         await log_channel.send(embed=embed)
 
-    # Добавляем информацию в базу данных
     data = {
         "event_type": event_type,
         "before": {
@@ -900,30 +916,25 @@ async def log_channel_event(event_type, before=None, after=None, guild=None, act
     await log_event_to_db(guild_id, event_type, data)
 
 
-
 async def format_permissions(overwrites):
     if not overwrites:
         return "Нет доступных данных"
 
     permissions_list = []
-    for role, overwrite in overwrites.items():
-        # Получаем разрешения роли
-        role_permissions = role.permissions  # Это объект Permissions роли
-
-        # Получаем переопределения разрешений из объекта overwrite
+    for target, overwrite in overwrites.items():
         perm_values = {
-            perm: getattr(overwrite, perm, getattr(role_permissions, perm))  # Используем значение из overwrite, если оно есть
-            for perm in PERMISSIONS  # Итерируемся по значениям PERMISSIONS
-            if hasattr(role_permissions, perm)  # Проверяем, существует ли атрибут в объекте Permissions
+            perm: value for perm, value in overwrite if value is not None
         }
 
-        # Сформируйте строку с описанием разрешений
         permissions_description = ",\n".join(
             [f"{perm}: {'✅' if value else '❌'}" for perm, value in perm_values.items()]
         )
-        permissions_list.append(f"**{role.name}**: {permissions_description}")
+        permissions_list.append(f"**{target.name}**: {permissions_description}")
 
     return "\n".join(permissions_list)
+
+
+
 
 async def log_role_event(event_type, before=None, after=None, guild=None, actor=None):
     if guild is None:
@@ -931,6 +942,7 @@ async def log_role_event(event_type, before=None, after=None, guild=None, actor=
 
     description = f"<@{actor.id}> ({actor.name})\n"
     file = None
+    embed = None
     guild_id = guild.id
     formatted_time = datetime.utcnow().isoformat()
 
@@ -950,19 +962,18 @@ async def log_role_event(event_type, before=None, after=None, guild=None, actor=
                 log_channel = guild.get_channel(log_channel_id)
                 if log_channel:
                     if before is None and after is not None:
-                        # Role created
-                        description = f"**{await get_phrase('Role created', guild)}**:\n{after.mention}"
+                        description += f"**{await get_phrase('Role created', guild)}**:\n{after.mention}"
                         embed = discord.Embed(color=discord.Color.green())
                         embed.description = description
                         await log_channel.send(embed=embed)
+
                     elif before is not None and after is None:
-                        # Role deleted
-                        description = f"**{await get_phrase('Role deleted', guild)}**:\n{before.name}"
+                        description += f"**{await get_phrase('Role deleted', guild)}**:\n{before.name}"
                         embed = discord.Embed(color=discord.Color.red())
                         embed.description = description
                         await log_channel.send(embed=embed)
+
                     else:
-                        # Role updated
                         changes = await check_and_log_role_changes(guild, before, after, event_type)
 
                         if changes:
@@ -974,31 +985,31 @@ async def log_role_event(event_type, before=None, after=None, guild=None, actor=
                                         current_permissions = await format_role_permissions(after.permissions)
                                         differences = await format_role_permissions_diff(before.permissions, after.permissions)
                                         if differences:
-                                            changes_description.append(f"**{await get_phrase('Permissions', guild)}**:" + differences)
+                                            changes_description.append(f"**{await get_phrase('Permissions', guild)}**:\n" + differences)
                                         else:
                                             changes_description.append(f"**{await get_phrase('Permissions', guild)}**: {await get_phrase('no changes found', guild)}")
                                 elif key == "position":
                                     # Only log position changes to the database, do not send a message
                                     continue
                                 elif key == "color":
-                                    # Generate an image to show the color change
-                                    await generate_color_change_image(previous, current)
-                                    file = discord.File("color_change.png", filename="color_change.png")
+                                    file = await generate_color_change_image(previous, current)
                                     embed = discord.Embed(color=discord.Color.from_str(current))
-                                    changes_description.append(f"**{await get_phrase('Color', guild)}**: {previous} → {current}")
-                                    description += f"\n**{await get_phrase('Changes', guild)}** {after.mention}:\n" + "\n".join(
-                                        changes_description)
-                                    embed.description = description
-                                    embed.set_image(url="attachment://color_change.png")
-                                    await log_channel.send(embed=embed, file=file)
+                                    changes_description.append(
+                                        f"**{await get_phrase('Color', guild)}**: {previous} → {current}")
                                 else:
                                     changes_description.append(f"**{key.capitalize()}**: {previous} → {current}")
-                            if changes_description:
-                                if file is None:
-                                    description += f"\n**{await get_phrase('Changes', guild)}** {after.mention}:" + "\n".join(changes_description)
 
-                                    embed = discord.Embed(color=discord.Color.from_str("#6B8E23"))
-                                    embed.description = description
+                            if changes_description:
+                                if embed is None:
+                                    embed = discord.Embed(color=discord.Color.from_str("#7CFC00"))
+                                description += f"\n**{await get_phrase('Changes', guild)}** {after.mention}:\n" + "\n".join(
+                                    changes_description)
+                                embed.description = description
+                                if file is not None:
+                                    image_bytes = file.fp
+                                    embed.set_image(url="attachment://color_change.png")
+                                    await log_channel.send(embed=embed, file=discord.File(fp=image_bytes, filename="color_change.png"))
+                                else:
                                     await log_channel.send(embed=embed)
 
     data = {
@@ -1013,7 +1024,7 @@ async def log_role_event(event_type, before=None, after=None, guild=None, actor=
         },
         "permissions": description,
         "event_time": str(formatted_time),
-        "actor_id": str(actor.id) if actor else None  # Сохраняем ID того, кто сделал изменения
+        "actor_id": str(actor.id) if actor else None
     }
     await log_event_to_db(guild_id, event_type, data)
 
@@ -1026,7 +1037,6 @@ async def format_role_permissions(overwrites):
     for perm in PERMISSIONS:
         value = getattr(overwrites, perm, None)
         if isinstance(value, bool):
-            print(f"{perm}\t{value}")
             permissions_list.append(f"{perm}: {'✅' if value else '❌'}")
 
     return "\n".join(permissions_list)
@@ -1043,23 +1053,15 @@ async def format_role_permissions_diff(previous_permissions, current_permissions
 
 
 async def generate_color_change_image(old_color, new_color):
-    from PIL import Image, ImageDraw, ImageFont, ImageColor
-
-    # Загружаем изображение стрелки
-    arrow_image = Image.open("arrow.png").convert("RGBA")
-
-    # Создаем изображение с предыдущим и новым цветами рядом, включая градиент и стрелку
     image = Image.new("RGBA", (400, 200), (255, 255, 255, 0))
     draw = ImageDraw.Draw(image)
 
-    # Рисуем градиентный фон сверху
     for x in range(400):
         r = 112 + int((47 / 400) * x)
         g = 128 + int((79 / 400) * x)
         b = 144 + int((79 / 400) * x)
         draw.line([(x, 0), (x, 50)], fill=(r, g, b))
 
-    # Добавляем текст "OLD" и "NEW" по центру соответствующих областей
     try:
         font = ImageFont.truetype("arial.ttf", 20)
     except IOError:
@@ -1073,16 +1075,13 @@ async def generate_color_change_image(old_color, new_color):
     new_text_width, new_text_height = new_text_bbox[2] - new_text_bbox[0], new_text_bbox[3] - new_text_bbox[1]
     draw.text((200 + (200 - new_text_width) / 2, (50 - new_text_height) / 2), "NEW", fill="black", font=font)
 
-    # Преобразуем цвета в формат RGB, если они представлены в виде строк
     if isinstance(old_color, str):
         old_color = ImageColor.getrgb(old_color)
     if isinstance(new_color, str):
         new_color = ImageColor.getrgb(new_color)
 
-    # Рисуем сплошной старый цвет слева
     draw.rectangle([0, 50, 100, 200], fill=old_color)
 
-    # Рисуем градиент от старого цвета к новому в центре
     for x in range(100, 300):
         ratio = (x - 100) / 200
         r = int(old_color[0] * (1 - ratio) + new_color[0] * ratio)
@@ -1090,16 +1089,14 @@ async def generate_color_change_image(old_color, new_color):
         b = int(old_color[2] * (1 - ratio) + new_color[2] * ratio)
         draw.line([(x, 50), (x, 200)], fill=(r, g, b))
 
-    # Рисуем сплошной новый цвет справа
     draw.rectangle([300, 50, 400, 200], fill=new_color)
 
-    # Масштабируем и вставляем изображение стрелки между текстами "OLD" и "NEW"
-    arrow_image = arrow_image.resize((100, 50), Image.LANCZOS)
-    arrow_position = (150, 0)
-    image.paste(arrow_image, arrow_position, arrow_image)
+    image_bytes = io.BytesIO()
+    image.save(image_bytes, format='PNG')
+    image_bytes.seek(0)
 
-    # Сохраняем итоговое изображение
-    image.save("color_change.png")
+    file = discord.File(fp=image_bytes, filename=f"{old_color}-{new_color}.png")
+    return file
 
 
 

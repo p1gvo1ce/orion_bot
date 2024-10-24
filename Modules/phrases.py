@@ -24,7 +24,6 @@ async def get_guild_language(guild_id: int) -> str:
 
 PHRASES_FILE = 'bot_phrases.json'
 
-# Загрузка фраз из файла при старте
 try:
     with open(PHRASES_FILE, 'r', encoding='utf-8') as f:
         bot_phrases.update(json.load(f))
@@ -55,22 +54,17 @@ async def get_phrase(phrase_key: str, guild: str) -> str:
         guild_id = guild
     language = await get_guild_language(guild_id)
 
-    # Заменяем "_" на пробел в ключе
     phrase_key_formatted = phrase_key.replace("_", " ")
 
-    # Проверяем наличие ключа
     if phrase_key_formatted not in bot_phrases:
-        # Переводим ключ на английский и русский
         ru_translation = await translate_text(phrase_key_formatted, 'ru')
         en_translation = phrase_key_formatted
 
-        # Добавляем новый ключ в словарь
         bot_phrases[phrase_key_formatted] = {
             'ru': ru_translation,
             'en': en_translation
         }
 
-        # Сохраняем обновленный словарь в файл
         with open(PHRASES_FILE, 'w', encoding='utf-8') as f:
             json.dump(bot_phrases, f, ensure_ascii=False, indent=4)
 

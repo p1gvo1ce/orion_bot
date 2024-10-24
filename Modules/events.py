@@ -62,8 +62,8 @@ async def greetings_delete_greetings(message):
 
 async def get_actor(guild):
     async for entry in guild.audit_logs(action=discord.AuditLogAction.channel_update, limit=1):
-        return entry.user  # Возвращаем пользователя, который совершил действие
-    return None  # Если ничего не найдено
+        return entry.user
+    return None
 
 async def on_guild_role_create(role):
     await log_role_event("role_created", after=role, guild=role.guild, actor=await get_actor(role.guild))
