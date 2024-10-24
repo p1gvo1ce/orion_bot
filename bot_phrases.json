@@ -1,0 +1,662 @@
+{
+    "language_changed": {
+        "ru": "Язык изменен на русский",
+        "en": "Language changed to English"
+    },
+    "channels for party search created": {
+        "ru": "Текстовый и голосовой каналы для поиска пати созданы",
+        "en": "Text and voice channels for party search created"
+    },
+    "Text Channel": {
+        "ru": "Текстовый канал",
+        "en": "Text Channel"
+    },
+    "Voice Channel": {
+        "ru": "Голосовой канал",
+        "en": "Voice Channel"
+    },
+    "looking for a company": {
+        "ru": "ищет компанию в голосовом канале",
+        "en": "looking for a company in the voice channel"
+    },
+    "Join Voice Channel": {
+        "ru": "Присоединиться",
+        "en": "Join Voice Channel"
+    },
+    "Click here to join": {
+        "ru": "Нажми чтобы присоединиться",
+        "en": "Click here to join"
+    },
+    "Time": {
+        "ru": "Время",
+        "en": "Time"
+    },
+    "Number of unique players": {
+        "ru": "Количество уникальных игроков",
+        "en": "Number of unique players"
+    },
+    "Top games activity on": {
+        "ru": "Топ игровых активносей на",
+        "en": "Top games activity on"
+    },
+    "Top": {
+        "ru": "Топ",
+        "en": "Top"
+    },
+    "Games Activity": {
+        "ru": "Игровых Активностей",
+        "en": "Games Activity"
+    },
+    "Data for the last": {
+        "ru": "Данные за последние",
+        "en": "Data for the last"
+    },
+    "days with granularity": {
+        "ru": "дней с гранулярностью",
+        "en": "days with granularity"
+    },
+    "unique players": {
+        "ru": "уникальных игроков",
+        "en": "unique players"
+    },
+    "popularity chart for the last": {
+        "ru": "чарт популярности за последние",
+        "en": "popularity chart for the last"
+    },
+    "Activity": {
+        "ru": "Активность",
+        "en": "Activity"
+    },
+    "Add Info": {
+        "ru": "Добавить инфо",
+        "en": "Add Info"
+    },
+    "Additional Information": {
+        "ru": "Дополнительная информация",
+        "en": "Additional Information"
+    },
+    "Enter any additional details here...": {
+        "ru": "Введи дополнительные детали тут...",
+        "en": "Enter any additional details here..."
+    },
+    "Information successfully added.": {
+        "ru": "Дополнительная информация добавлена",
+        "en": "Information successfully added."
+    },
+    "Who is playing?": {
+        "ru": "Кто в игре?",
+        "en": "Who is playing?"
+    },
+    "Close": {
+        "ru": "Закрыть",
+        "en": "Close"
+    },
+    "Currently in game": {
+        "ru": "Сейчас в игре",
+        "en": "Currently in game"
+    },
+    "Only the channel creator can add info.": {
+        "ru": "Добавлять информацию может только создатель поиска",
+        "en": "Only the channel creator can add info."
+    },
+    "Only the channel creator can close the search.": {
+        "ru": "Только инициатор поиска может его закрыть.",
+        "en": "Only the channel creator can close the search."
+    },
+    "Search message closed.": {
+        "ru": "Поиск закрыт.",
+        "en": "Search message closed."
+    },
+    "No one else is currently playing this game.": {
+        "ru": "В эту игру больше никто не играет.",
+        "en": "No one else is currently playing this game."
+    },
+    "Currently playing": {
+        "ru": "Сейчас в игре",
+        "en": "Currently playing"
+    },
+    "Data based on": {
+        "ru": "Основано на данных",
+        "en": "Data based on"
+    },
+    "unique players over all time": {
+        "ru": "уникальных игроков за период",
+        "en": "unique players over all time"
+    },
+    "You need to specify the on/off mode": {
+        "ru": "Нужно указать режим on/off",
+        "en": "You need to specify the on/off mode"
+    },
+    "Automatic greeting deletion enabled": {
+        "ru": "Включено автоматическое удаление приветствий",
+        "en": "Automatic greeting deletion enabled"
+    },
+    "Delay": {
+        "ru": "Задержка",
+        "en": "Delay"
+    },
+    "Automatic greeting deletion disabled": {
+        "ru": "Выключено автоматическое удаление приветствий",
+        "en": "Automatic greeting deletion disabled"
+    },
+    "seconds": {
+        "ru": "секунд",
+        "en": "seconds"
+    },
+    "Create a party search": {
+        "ru": "Создание поиска пати",
+        "en": "Create a party search"
+    },
+    "How to search": {
+        "ru": "Как искать",
+        "en": "How to search"
+    },
+    "how_to_search_instruction": {
+        "ru": "Чтобы начать поиск тебе нужно:\n\n```\n1. Присоединиться к любому доступному голосовому каналу\n2. Нажать кнопку \"Создать поиск\"\n3. Заполнить информацию об активности для которой ты ищешь людей и указать дополнительную информацию\n```\nПоиск будет существовать до тех пор, пока ты остаёшься в голосовом канале или пока не нажмешь кнопку завершения поиска\nЕсли на сервере есть роль соответствующая твоей активности (строгое соответствие названия), то эта роль будет упомянута в сообщении.\n\nЕсли ты хочешь создать роль для поиска, то нужно:\n```\n1. Включить в Дискорд синхронизацию со Стим или с другим источником активности (в твоем профиле должно отображаться \"играет в...\"\n2. Зайти в канал для поиска пати\n```\nЕсли это невозможно для какой-то активности, то необходимо обратиться к владельцам (администраторам) сервера для создания роли активности вручную\n",
+        "en": "To start a search you need to:\n\n```\n1. Join any available voice channel\n2. Click the \"Create search\" button\n3. Fill in the information about the activity for which you are searching for people and specify additional information\n```\nThe search will exist as long as you remain in the voice channel or until you click the end search button\nIf there is a role on the server that matches your activity (strict match of the name), then this role will be mentioned in the message.\n\nIf you want to create a role for searching, you need to:\n```\n1. Enable syncing with Steam or another source of activity in Discord (your profile should display \"plays in...\"\n2. Go to the channel to search for a party\n```\nIf this is not possible for some activity, then you need to contact the owners (administrators) of the server to create the activity role manually.\n"
+    },
+    "create_find": {
+        "ru": "Создать поиск",
+        "en": "Create a search"
+    },
+    "You must be in the voice channel.": {
+        "ru": "Ты должен быть в голосовом канале.",
+        "en": "You must be in the voice channel."
+    },
+    "Activity name": {
+        "ru": "Название активности",
+        "en": "Activity name"
+    },
+    "Enter the activity name here": {
+        "ru": "Укажи название активности здесь",
+        "en": "Enter the activity name here"
+    },
+    "You cannot run more than 1 search per person.": {
+        "ru": "Нельзя запустить более 1 поиска на человека.",
+        "en": "You cannot run more than 1 search per person."
+    },
+    "No one has been seen playing this game lately.": {
+        "ru": "В последнее время никто не замечен в этой игре.",
+        "en": "No one has been seen playing this game lately."
+    },
+    "There is no information on this activity.": {
+        "ru": "По этой активности нет информации.",
+        "en": "There is no information on this activity."
+    },
+    "Roles for top games have been created": {
+        "ru": "Роли для топ %s игр успешно созданы и назначены.",
+        "en": "Roles for top %s games have been successfully created and assigned."
+    },
+    "Name_personal_voice_set": {
+        "ru": "Задано название для личных голосовых каналов.",
+        "en": "The name for personal voice channels has been set."
+    },
+    "Game Roles Update Enabled": {
+        "ru": "Включено обновление игровых ролей",
+        "en": "Game Roles Update Enabled"
+    },
+    "Game role Update disabled": {
+        "ru": "Выключено обновление игровых ролей",
+        "en": "Game role Update disabled"
+    },
+    "New Message": {
+        "ru": "Новое сообщение",
+        "en": "New Message"
+    },
+    "Author": {
+        "ru": "Автор",
+        "en": "Author"
+    },
+    "Content": {
+        "ru": "Содержание",
+        "en": "Content"
+    },
+    "Channel": {
+        "ru": "Канал",
+        "en": "Channel"
+    },
+    "Created At": {
+        "ru": "Создано",
+        "en": "Created At"
+    },
+    "Deleted Message": {
+        "ru": "Удалено сообщение",
+        "en": "Deleted Message"
+    },
+    "Deleted At": {
+        "ru": "Удалено",
+        "en": "Deleted At"
+    },
+    "Message Edited": {
+        "ru": "Сообщение отредактировано",
+        "en": "Message Edited"
+    },
+    "Content Before": {
+        "ru": "Содержание До",
+        "en": "Content Before"
+    },
+    "Content After": {
+        "ru": "Содержание После",
+        "en": "Content After"
+    },
+    "Event Type": {
+        "ru": "Событие",
+        "en": "Event Type"
+    },
+    "Logged At": {
+        "ru": "Время записи",
+        "en": "Logged At"
+    },
+    "Data": {
+        "ru": "Данные",
+        "en": "Data"
+    },
+    "Category": {
+        "ru": "Категория",
+        "en": "Category"
+    },
+    "Edited At": {
+        "ru": "Отредактировано",
+        "en": "Edited At"
+    },
+    "No logs found for the specified filters": {
+        "ru": "Нет логов с указанными фильтрами",
+        "en": "No logs found for the specified filters"
+    },
+    "start time": {
+        "ru": "начало периода",
+        "en": "start time"
+    },
+    "end time": {
+        "ru": "конец периода",
+        "en": "end time"
+    },
+    "search": {
+        "ru": "поиск",
+        "en": "search"
+    },
+    "Fetching logs": {
+        "ru": "Извлечение логов",
+        "en": "Fetching logs"
+    },
+    "Vars": {
+        "ru": "Переменные",
+        "en": "Vars"
+    },
+    "event type": {
+        "ru": "тип события",
+        "en": "event type"
+    },
+    "operator": {
+        "ru": "оператор",
+        "en": "operator"
+    },
+    "input": {
+        "ru": "ввод",
+        "en": "input"
+    },
+    "New Member Joined": {
+        "ru": "Участник присоединился",
+        "en": "New Member Joined"
+    },
+    "Member": {
+        "ru": "Участникк",
+        "en": "Member"
+    },
+    "Invited by": {
+        "ru": "Пригласил",
+        "en": "Invited by"
+    },
+    "Invite Code": {
+        "ru": "Код приглашения",
+        "en": "Invite Code"
+    },
+    "Joined At": {
+        "ru": "Присоединился",
+        "en": "Joined At"
+    },
+    "Member Left": {
+        "ru": "Участник ушел",
+        "en": "Member Left"
+    },
+    "Name": {
+        "ru": "Имя",
+        "en": "Name"
+    },
+    "Left At": {
+        "ru": "Ушел",
+        "en": "Left At"
+    },
+    "Member Muted": {
+        "ru": "Участник получил mute",
+        "en": "Member Muted"
+    },
+    "Muted At": {
+        "ru": "Лишен голоса",
+        "en": "Muted At"
+    },
+    "Reason": {
+        "ru": "Причина",
+        "en": "Reason"
+    },
+    "Duration": {
+        "ru": "Длительность",
+        "en": "Duration"
+    },
+    "Member Unmuted": {
+        "ru": "С участника снят mute",
+        "en": "Member Unmuted"
+    },
+    "Unmuted At": {
+        "ru": "Mute снят",
+        "en": "Unmuted At"
+    },
+    "Member Banned": {
+        "ru": "Участник забанен",
+        "en": "Member Banned"
+    },
+    "Banned At": {
+        "ru": "Забанен",
+        "en": "Banned At"
+    },
+    "Joined Voice Channel": {
+        "ru": "Подключение к голосовому каналу",
+        "en": "Joined Voice Channel"
+    },
+    "Left Voice Channel": {
+        "ru": "Отключение от голосового канала",
+        "en": "Left Voice Channel"
+    },
+    "Switched Voice Channels": {
+        "ru": "Смена голосового канала",
+        "en": "Switched Voice Channels"
+    },
+    "Muted Microphone": {
+        "ru": "Выключение микрофона",
+        "en": "Muted Microphone"
+    },
+    "Unmuted Microphone": {
+        "ru": "Включение микрофона",
+        "en": "Unmuted Microphone"
+    },
+    "Deafened": {
+        "ru": "Выключение звука",
+        "en": "Deafened"
+    },
+    "Undeafened": {
+        "ru": "Включение звука",
+        "en": "Undeafened"
+    },
+    "Occurred At": {
+        "ru": "Время события",
+        "en": "Occurred At"
+    },
+    "Role Created": {
+        "ru": "Создана роль",
+        "en": "Role Created"
+    },
+    "Role Name": {
+        "ru": "Название роли",
+        "en": "Role Name"
+    },
+    "Role ID": {
+        "ru": "ID роли",
+        "en": "Role ID"
+    },
+    "Role Updated": {
+        "ru": "Роль обновлена",
+        "en": "Role Updated"
+    },
+    "Before": {
+        "ru": "До",
+        "en": "Before"
+    },
+    "After": {
+        "ru": "После",
+        "en": "After"
+    },
+    "Updated At": {
+        "ru": "Время обновления",
+        "en": "Updated At"
+    },
+    "Role Deleted": {
+        "ru": "Роль удалена",
+        "en": "Role Deleted"
+    },
+    "Channel Created": {
+        "ru": "Создан канал",
+        "en": "Channel Created"
+    },
+    "Channel Name": {
+        "ru": "Название канала",
+        "en": "Channel Name"
+    },
+    "Channel ID": {
+        "ru": "ID канала",
+        "en": "Channel ID"
+    },
+    "Channel Updated": {
+        "ru": "Канал обновлен",
+        "en": "Channel Updated"
+    },
+    "Channel Deleted": {
+        "ru": "Канал удален",
+        "en": "Channel Deleted"
+    },
+    "Command error": {
+        "ru": "Произошла ошибка, либо недостаточно прав для выполнения команды",
+        "en": "An error occurred or you do not have sufficient rights to execute the command."
+    },
+    "Automatic search is on": {
+        "ru": "Автоматический поиск включен",
+        "en": "Automatic search is on"
+    },
+    "Automatic search is off": {
+        "ru": "Автоматический поиск выключен",
+        "en": "Automatic search is off"
+    },
+    "create find": {
+        "ru": "создать найти",
+        "en": "create find"
+    },
+    "Permissions": {
+        "ru": "Разрешения",
+        "en": "Permissions"
+    },
+    "no changes found": {
+        "ru": "изменений не обнаружено",
+        "en": "no changes found"
+    },
+    "Changes": {
+        "ru": "Изменения",
+        "en": "Changes"
+    },
+    "language changed": {
+        "ru": "язык изменен",
+        "en": "language changed"
+    },
+    "Role created": {
+        "ru": "Роль создана",
+        "en": "Role created"
+    },
+    "Role deleted": {
+        "ru": "Роль удалена",
+        "en": "Role deleted"
+    },
+    "Color": {
+        "ru": "Цвет",
+        "en": "Color"
+    },
+    "Slowmode": {
+        "ru": "Медленный режим",
+        "en": "Slowmode"
+    },
+    "NSFW": {
+        "ru": "NSFW",
+        "en": "NSFW"
+    },
+    "Bitrate": {
+        "ru": "Битрейт",
+        "en": "Bitrate"
+    },
+    "User Limit": {
+        "ru": "Пользовательский лимит",
+        "en": "User Limit"
+    },
+    "  delattr  ": {
+        "ru": "делатр",
+        "en": "  delattr  "
+    },
+    "  dir  ": {
+        "ru": "реж.",
+        "en": "  dir  "
+    },
+    "  eq  ": {
+        "ru": "экв.",
+        "en": "  eq  "
+    },
+    "  format  ": {
+        "ru": "формат",
+        "en": "  format  "
+    },
+    "  ge  ": {
+        "ru": "ге",
+        "en": "  ge  "
+    },
+    "  getattribute  ": {
+        "ru": "получить атрибут",
+        "en": "  getattribute  "
+    },
+    "  getstate  ": {
+        "ru": "получить состояние",
+        "en": "  getstate  "
+    },
+    "  gt  ": {
+        "ru": "гт",
+        "en": "  gt  "
+    },
+    "  init  ": {
+        "ru": "инициализировать",
+        "en": "  init  "
+    },
+    "  iter  ": {
+        "ru": "итер",
+        "en": "  iter  "
+    },
+    "  le  ": {
+        "ru": "ле",
+        "en": "  le  "
+    },
+    "  lt  ": {
+        "ru": "лт",
+        "en": "  lt  "
+    },
+    "  ne  ": {
+        "ru": "пе",
+        "en": "  ne  "
+    },
+    "  reduce  ": {
+        "ru": "уменьшать",
+        "en": "  reduce  "
+    },
+    "  reduce ex  ": {
+        "ru": "уменьшить бывшую",
+        "en": "  reduce ex  "
+    },
+    "  repr  ": {
+        "ru": "представитель",
+        "en": "  repr  "
+    },
+    "  setattr  ": {
+        "ru": "setattr",
+        "en": "  setattr  "
+    },
+    "  sizeof  ": {
+        "ru": "размер",
+        "en": "  sizeof  "
+    },
+    "  str  ": {
+        "ru": "ул.",
+        "en": "  str  "
+    },
+    " set": {
+        "ru": "набор",
+        "en": " set"
+    },
+    " values": {
+        "ru": "ценности",
+        "en": " values"
+    },
+    "is empty": {
+        "ru": "пусто",
+        "en": "is empty"
+    },
+    "manage channels": {
+        "ru": "управлять каналами",
+        "en": "manage channels"
+    },
+    "manage permissions": {
+        "ru": "управлять разрешениями",
+        "en": "manage permissions"
+    },
+    "manage roles": {
+        "ru": "управлять ролями",
+        "en": "manage roles"
+    },
+    "manage webhooks": {
+        "ru": "управлять веб-перехватчиками",
+        "en": "manage webhooks"
+    },
+    "pair": {
+        "ru": "пара",
+        "en": "pair"
+    },
+    "read messages": {
+        "ru": "читать сообщения",
+        "en": "read messages"
+    },
+    "update": {
+        "ru": "обновлять",
+        "en": "update"
+    },
+    "view channel": {
+        "ru": "просмотреть канал",
+        "en": "view channel"
+    },
+    "PURE FLAGS": {
+        "ru": "ЧИСТЫЕ ФЛАГИ",
+        "en": "PURE FLAGS"
+    },
+    "VALID NAMES": {
+        "ru": "ДЕЙСТВИТЕЛЬНЫЕ ИМЕНА",
+        "en": "VALID NAMES"
+    },
+    "from pair": {
+        "ru": "из пары",
+        "en": "from pair"
+    },
+    "create instant invite": {
+        "ru": "создать мгновенное приглашение",
+        "en": "create instant invite"
+    },
+    "use application commands": {
+        "ru": "использовать команды приложения",
+        "en": "use application commands"
+    },
+    "use embedded activities": {
+        "ru": "использовать встроенные действия",
+        "en": "use embedded activities"
+    },
+    "use external apps": {
+        "ru": "использовать внешние приложения",
+        "en": "use external apps"
+    },
+    "help": {
+        "ru": "Справка",
+        "en": "Help"
+    },
+    "help_instruction": {
+        "ru": "Связанные комманды:\n/party_find_mode on/off - включить или выключить автоматическое объявление о поиске если есть игровая активность в дискорд\n\n/set_voice_name - установить название для твоего канала по умолчанию",
+        "en": "Related commands:\n/party_find_mode on/off - enable or disable automatic announcement of search if there is game activity in discord\n\n/set_voice_name - set the name for your default channel"
+    }
+}

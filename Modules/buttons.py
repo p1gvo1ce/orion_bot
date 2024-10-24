@@ -165,6 +165,25 @@ class FindPartyWithoutActivity(discord.ui.View):
         create_find.callback = self.create_find
         self.add_item(create_find)
 
+        help_label = await get_phrase("help", self.guild.id)
+        help_ = discord.ui.Button(
+            label=help_label,
+            style=discord.ButtonStyle.blurple
+        )
+        help_.callback = self.help_
+        self.add_item(help_)
+
+    async def help_(self, interaction: discord.Interaction):
+
+        embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+        description = await get_phrase('help_instruction', self.guild.id)
+        embed.description = description
+
+        await interaction.response.send_message(
+            embed=embed,
+            ephemeral=True
+        )
+
     async def how_to_search(self, interaction: discord.Interaction):
 
         embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
