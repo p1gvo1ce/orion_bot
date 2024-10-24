@@ -66,22 +66,22 @@ async def get_actor(guild):
     return None  # Если ничего не найдено
 
 async def on_guild_role_create(role):
-    await log_role_event("role_created", after=role, guild=role.guild)
+    await log_role_event("role_created", after=role, guild=role.guild, actor=await get_actor(role.guild))
 
 async def on_guild_role_update(before, after):
     await log_role_event("role_updated", before=before, after=after, guild=before.guild, actor=await get_actor(before.guild))
 
 async def on_guild_role_delete(role):
-    await log_role_event("role_deleted", before=role, guild=role.guild)
+    await log_role_event("role_deleted", before=role, guild=role.guild, actor=await get_actor(role.guild))
 
 async def on_guild_channel_create(channel):
-    await log_channel_event("channel_created", after=channel, guild=channel.guild)
+    await log_channel_event("channel_created", after=channel, guild=channel.guild, actor=await get_actor(channel.guild))
 
 async def on_guild_channel_update(before, after):
     await log_channel_event("channel_updated", before=before, after=after, guild=before.guild, actor=await get_actor(before.guild))
 
 async def on_guild_channel_delete(channel):
-    await log_channel_event("channel_deleted", before=channel, guild=channel.guild)
+    await log_channel_event("channel_deleted", before=channel, guild=channel.guild, actor=await get_actor(channel.guild))
 
 async def on_voice_state_update(member, before, after):
     await log_voice_state_update(member, before, after)
