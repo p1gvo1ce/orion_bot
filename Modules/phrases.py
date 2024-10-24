@@ -56,11 +56,11 @@ async def get_phrase(phrase_key: str, guild: str) -> str:
 
     phrase_key_formatted = phrase_key.replace("_", " ")
 
-    if phrase_key_formatted not in bot_phrases:
+    if phrase_key not in bot_phrases:
         ru_translation = await translate_text(phrase_key_formatted, 'ru')
         en_translation = phrase_key_formatted
 
-        bot_phrases[phrase_key_formatted] = {
+        bot_phrases[phrase_key] = {
             'ru': ru_translation,
             'en': en_translation
         }
@@ -68,4 +68,4 @@ async def get_phrase(phrase_key: str, guild: str) -> str:
         with open(PHRASES_FILE, 'w', encoding='utf-8') as f:
             json.dump(bot_phrases, f, ensure_ascii=False, indent=4)
 
-    return bot_phrases.get(phrase_key_formatted, {}).get(language, "text 404")
+    return bot_phrases.get(phrase_key, {}).get(language, "text 404")

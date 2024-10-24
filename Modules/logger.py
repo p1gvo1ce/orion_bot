@@ -997,7 +997,7 @@ async def log_role_event(event_type, before=None, after=None, guild=None, actor=
                                     changes_description.append(
                                         f"**{await get_phrase('Color', guild)}**: {previous} → {current}")
                                 else:
-                                    changes_description.append(f"**{key.capitalize()}**: {previous} → {current}")
+                                    changes_description.append(f"**{await get_phrase(key.capitalize(), guild)}**: {previous} → {current}")
 
                             if changes_description:
                                 if embed is None:
