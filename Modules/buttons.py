@@ -1,13 +1,15 @@
 from logging import exception
 
 import discord
+from discord import TextChannel, VoiceChannel
 import re
 
 from matplotlib.style.core import context
 
 from Modules.phrases import get_phrase
 from Modules.db_control import (get_recent_activity_members, read_from_guild_settings_db,
-                                delete_button_data_from_db, read_all_buttons_data, write_to_buttons_db)
+                                delete_button_data_from_db, read_all_buttons_data, write_to_buttons_db, logger,
+                                delete_member_data_from_db, write_to_members_db)
 from utils import  clean_channel_id, get_bot
 
 bot = get_bot()
@@ -24,15 +26,14 @@ async def update_buttons_on_start():
             search_text_channel_ids = [clean_channel_id(id_str) for id_str in search_text_channel_ids]
 
             message = None
-            for text_channel_id in search_text_channel_ids:
-                text_channel = guild.get_channel(text_channel_id)
-                if text_channel:
+            for channel in guild.channels:
+                # Проверяем, что канал является текстовым или голосовым
+                if isinstance(channel, (TextChannel, VoiceChannel)):
                     try:
-                        message = await text_channel.fetch_message(button_data["message_id"])
+                        message = await channel.fetch_message(button_data["message_id"])
                         break
                     except discord.NotFound:
                         continue
-
             if message:
                 if button_data["button_type"] == "JoinButton":
                     member = guild.get_member(button_data["member_id"])
@@ -61,6 +62,14 @@ async def update_buttons_on_start():
                     modal = FindPartyWithoutActivity(guild)
                     await modal.add_buttons()
                     await message.edit(view=modal)
+                elif button_data["button_type"] == "VoiceChannelControl":
+                    logger.info('Voice_channel_control UPDATE')
+                    await message.edit(view=None)
+                    voice_id = int((button_data.get('data').get('voice_id')).replace("id_", ""))
+                    creator_id = int((button_data.get('data').get('creator_id')).replace("id_", ""))
+                    voice_button_view = VoiceChannelCcontrol(guild_id, creator_id, voice_id)
+                    await voice_button_view.initialize_buttons()
+                    await message.edit(view=voice_button_view)
 
 
             else:
@@ -69,6 +78,7 @@ async def update_buttons_on_start():
             for voice in guild.voice_channels:
                 if str(voice.id) in find_voices_ids and len(voice.members) == 0:
                     await voice.delete()
+    logger.info('Buttons Updated')
 
 
 def extract_id(message):
@@ -361,3 +371,134 @@ class JoinButton(discord.ui.View):
             await get_phrase("Search message closed.", self.guild_id),
             ephemeral=True
         )
+
+class ChannelRenameModal(discord.ui.Modal):
+    def __init__(self, original_message, guild_id):
+        super().__init__(title="Loading...")
+        self.original_message = original_message
+        self.guild_id = guild_id
+
+        self.add_item(discord.ui.TextInput(
+            label="Loading...",
+            placeholder="Loading...",
+            max_length=200
+        ))
+
+    async def on_submit(self, interaction: discord.Interaction):
+        new_name = self.children[0].value
+
+        await interaction.user.voice.channel.edit(name=new_name)
+
+        try:
+            await delete_member_data_from_db(interaction.user, 'voice_channel_name')
+        except:
+            pass
+        await write_to_members_db(interaction.user, 'voice_channel_name', new_name)
+
+        await interaction.response.send_message(
+            await get_phrase("The channel has been renamed.", self.guild_id),
+            ephemeral=True
+        )
+
+    async def setup(self):
+        self.title = await get_phrase("Rename channel", self.guild_id)
+        self.children[0].label = await get_phrase("New channel name", self.guild_id)
+        self.children[0].placeholder = await get_phrase("Enter channel name here...", self.guild_id)
+
+class ChannelUsersLimitModal(discord.ui.Modal):
+    def __init__(self, original_message, guild_id):
+        super().__init__(title="Loading...")
+        self.original_message = original_message
+        self.guild_id = guild_id
+
+        self.add_item(discord.ui.TextInput(
+            label="Loading...",
+            placeholder="Loading...",
+            max_length=200
+        ))
+
+    async def on_submit(self, interaction: discord.Interaction):
+        new_limit = self.children[0].value
+        try:
+            new_limit = int(new_limit.strip())
+        except Exception as e:
+            print(e)
+            await interaction.response.send_message(
+                await get_phrase("You must specify a number 0-99", self.guild_id),
+                ephemeral=True
+            )
+            return
+        await interaction.user.voice.channel.edit(user_limit=new_limit)
+        await interaction.response.send_message(
+            f"{await get_phrase("The limit has been set", self.guild_id)} {new_limit}",
+            ephemeral=True
+        )
+
+    async def setup(self):
+        self.title = await get_phrase("Limitation of the number of participants", self.guild_id)
+        self.children[0].label = await get_phrase("New limit", self.guild_id)
+        self.children[0].placeholder = await get_phrase("0 - 99", self.guild_id)
+
+class VoiceChannelCcontrol(discord.ui.View):
+    def __init__(self, guild_id, creator_id, voice_id):
+        super().__init__(timeout=None)
+        self.guild_id = guild_id
+        self.creator_id = creator_id
+        self.voice_id = voice_id
+
+    async def initialize_buttons(self):
+        rename_button = discord.ui.Button(
+            label=await get_phrase("Rename channel", self.guild_id),
+            style=discord.ButtonStyle.secondary
+        )
+        rename_button.callback = self.rename_button
+        self.add_item(rename_button)
+
+        users_limit = discord.ui.Button(
+            label=await get_phrase("Users limit", self.guild_id),
+            style=discord.ButtonStyle.secondary
+        )
+        users_limit.callback = self.users_limit
+        self.add_item(users_limit)
+
+    async def creator_check(self, interaction: discord.Interaction):
+        if interaction.user.id != self.creator_id:
+            embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+            description = await get_phrase('Only the channel owner can make changes.', self.guild_id)
+            embed.description = description
+
+            await interaction.response.send_message(
+                embed=embed,
+                ephemeral=True
+            )
+            return False
+        else:
+            return True
+
+    async def voice_id_check(self, interaction: discord.Interaction):
+        if interaction.user.voice.channel.id != self.voice_id:
+            embed = discord.Embed(color=discord.Color.from_str("#EE82EE"))
+            description = await get_phrase('You must be in the voice channel.', self.guild_id)
+            embed.description = description
+
+            await interaction.response.send_message(
+                embed=embed,
+                ephemeral=True
+            )
+            return False
+        else:
+            return True
+
+    async def rename_button(self, interaction: discord.Interaction):
+        if await self.creator_check(interaction) and await self.voice_id_check(interaction):
+            modal = ChannelRenameModal(interaction.message, interaction.guild_id)
+            await modal.setup()
+            await interaction.response.send_modal(modal)
+
+    async def users_limit(self, interaction: discord.Interaction):
+        if await self.creator_check(interaction) and await self.voice_id_check(interaction):
+            modal = ChannelUsersLimitModal(interaction.message, interaction.guild_id)
+            await modal.setup()
+            await interaction.response.send_modal(modal)
+
+

@@ -19,8 +19,6 @@ invitations = {}
 async def bot_start():
     print(f'Logged in as {bot.user.name}')
     await bot.tree.sync()
-
-    await update_buttons_on_start()
     await check_and_remove_nonexistent_channels()
     for guild in bot.guilds:
         invitations[guild.id] = await guild.invites()

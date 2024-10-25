@@ -658,5 +658,93 @@
     "help_instruction": {
         "ru": "Связанные комманды:\n/party_find_mode on/off - включить или выключить автоматическое объявление о поиске если есть игровая активность в дискорд\n\n/set_voice_name - установить название для твоего канала по умолчанию",
         "en": "Related commands:\n/party_find_mode on/off - enable or disable automatic announcement of search if there is game activity in discord\n\n/set_voice_name - set the name for your default channel"
+    },
+    "Only the channel owner can make changes.": {
+        "ru": "Только владелец канала может вносить изменения.",
+        "en": "Only the channel owner can make changes."
+    },
+    "": {
+        "ru": "",
+        "en": ""
+    },
+    "PURE_FLAGS": {
+        "ru": "ЧИСТЫЕ ФЛАГИ",
+        "en": "PURE FLAGS"
+    },
+    "Channel Management": {
+        "ru": "Управление каналами",
+        "en": "Channel Management"
+    },
+    "VALID_NAMES": {
+        "ru": "ДЕЙСТВИТЕЛЬНЫЕ ИМЕНА",
+        "en": "VALID NAMES"
+    },
+    "from_pair": {
+        "ru": "из пары",
+        "en": "from pair"
+    },
+    "is_empty": {
+        "ru": "пусто",
+        "en": "is empty"
+    },
+    "manage_channels": {
+        "ru": "управлять каналами",
+        "en": "manage channels"
+    },
+    "manage_permissions": {
+        "ru": "управлять разрешениями",
+        "en": "manage permissions"
+    },
+    "manage_roles": {
+        "ru": "управлять ролями",
+        "en": "manage roles"
+    },
+    "move_members": {
+        "ru": "перемещать участников",
+        "en": "move members"
+    },
+    "mute_members": {
+        "ru": "отключить звук участников",
+        "en": "mute members"
+    },
+    "Rename channel": {
+        "ru": "Переименовать канал",
+        "en": "Rename channel"
+    },
+    "New channel name": {
+        "ru": "Новое название канала",
+        "en": "New channel name"
+    },
+    "Enter channel name here...": {
+        "ru": "Введите здесь название канала...",
+        "en": "Enter channel name here..."
+    },
+    "The channel has been renamed.": {
+        "ru": "Канал переименован.",
+        "en": "The channel has been renamed."
+    },
+    "Users limit": {
+        "ru": "Ограничение пользователей",
+        "en": "Users limit"
+    },
+    "Limitation of the number of participants": {
+        "ru": "Ограничение количества участников",
+        "en": "Limitation of the number of participants"
+    },
+    "New limit": {
+        "ru": "Новый лимит",
+        "en": "New limit"
+    },
+    "0 - 99": {
+        "ru": "0–99",
+        "en": "0 - 99"
+    },
+    "You must specify a number 0-99": {
+        "ru": "Необходимо указать число 0-99",
+        "en": "You must specify a number 0-99"
+    },
+    "The limit has been set": {
+        "ru": "Лимит установлен",
+        "en": "The limit has been set"
     }
 }

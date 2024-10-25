@@ -8,7 +8,7 @@ from Modules.db_control import read_from_guild_settings_db, write_to_buttons_db,
 from Modules.text_channels_control import add_game_in_game_roles_channel
 from utils import clean_channel_id, get_bot, is_game_valid, get_logger
 from Modules.phrases import get_phrase
-from Modules.buttons import JoinButton
+from Modules.buttons import JoinButton, VoiceChannelCcontrol
 
 temp_channels_path = os.path.join("Data", "temp_channels.json")
 
@@ -91,6 +91,18 @@ async def find_party_controller(member, before, after):
             save_temp_channels(temp_channels)
             if member.voice and member.voice.channel:
                 await member.move_to(temp_channel)
+
+                button_data = {
+                    "voice_id": f"id_{temp_channel.id}",
+                    "creator_id": f"id_{member.id}"
+                }
+                control_message = await temp_channel.send(await get_phrase("Channel Management", guild_id))
+
+
+                await write_to_buttons_db(guild.id, control_message.id, "VoiceChannelControl", button_data, member.id)
+                voice_button_view = VoiceChannelCcontrol(guild_id, member.id, temp_channel.id)
+                await voice_button_view.initialize_buttons()
+                await control_message.edit(view=voice_button_view)
             else:
                 await temp_channel.delete()
                 return
