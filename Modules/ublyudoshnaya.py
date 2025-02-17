@@ -34,11 +34,15 @@ async def bolnoy_ublyudok(message):
     channel_bub = bot.get_channel(1196416516120379522)
     role = 1196412886944329738
     role = message.guild.get_role(role)
+    print('сработала ублюдошная')
     if 'я' in text and 'больн' in text and 'ублюд' in text and 'не' not in text:
+        print('признание ублюдка')
         if message.author.id in bub_block_users:
             await message.add_reaction('🖕')
+            print('и мы это знаем')
             return
         if role.id not in [role.id for role in message.author.roles]:
+            print('Приняли ублюдка')
             await message.author.add_roles(role)
             await channel_bub.send(f'''Привет <@{message.author.id}>!
 Прежде всего чекни <#1196415511655895050> и если что-то не нравится - пиздуй отседова.
@@ -47,7 +51,9 @@ async def bolnoy_ublyudok(message):
             await message.add_reaction('🤮')
 
     if 'я' in text and 'больн' in text and 'ублюд' in text and 'не' in text:
+        print('признание НЕ ублюдка')
         if role.id in [role.id for role in message.author.roles]:
+            print('Ну и пошел нахуй')
             await message.author.remove_roles(role)
             await channel_bub.send(f'''<@{message.author.id}> больше не больной ублюдок.
 Поздравляем с этим и желаем усраться.''')
