@@ -49,6 +49,8 @@ async def bolnoy_ublyudok(message):
 Если всё ок - заходи, ложись, здравствуй.''')
             await message.add_reaction('👉')
             await message.add_reaction('🤮')
+        else:
+            await message.add_reaction('🖕')
 
     if 'я' in text and 'больн' in text and 'ублюд' in text and 'не' in text:
         print('признание НЕ ублюдка')
@@ -57,3 +59,4 @@ async def bolnoy_ublyudok(message):
             await message.author.remove_roles(role)
             await channel_bub.send(f'''<@{message.author.id}> больше не больной ублюдок.
 Поздравляем с этим и желаем усраться.''')
+            await message.add_reaction('🖕')
