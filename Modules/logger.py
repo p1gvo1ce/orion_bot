@@ -10,8 +10,13 @@ from Modules.db_control import log_event_to_db, read_from_guild_settings_db, wri
 from utils import clean_channel_id, extract_emoji
 from Modules.phrases import get_phrase
 
+LOGGER_OFF = True
 
 async def extract_fields(readable_data: str, event_type: str, guild) -> str:
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     try:
         if isinstance(readable_data, str):
             data_dict = json.loads(readable_data.replace("'", "\""))
@@ -225,6 +230,10 @@ async def extract_fields(readable_data: str, event_type: str, guild) -> str:
 
 
 async def log_new_message(message):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     if message.author.bot:
         return
     guild_id = message.guild.id
@@ -291,6 +300,10 @@ async def log_new_message(message):
 
 
 async def log_deleted_message(message):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     if message.author.bot:
         return
 
@@ -348,6 +361,10 @@ async def log_deleted_message(message):
 
 
 async def log_edited_message(before, after):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     if after.author.bot:
         return
     guild_id = after.guild.id
@@ -404,6 +421,10 @@ async def log_edited_message(before, after):
     await log_event_to_db(guild_id, "edited_message", data)
 
 async def log_joined_member(member, inviter_id, invite_code):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     guild_id = member.guild.id
     formatted_time = datetime.utcnow().isoformat()
 
@@ -451,6 +472,10 @@ async def log_joined_member(member, inviter_id, invite_code):
     await log_event_to_db(guild_id, "member_joined", data)
 
 async def log_member_left(member):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     if member.bot:
         return
 
@@ -495,6 +520,10 @@ async def log_member_left(member):
     await log_event_to_db(guild_id, "member_left", data)
 
 async def log_member_muted(member, reason=None, duration=None):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     if member.bot:
         return
 
@@ -542,6 +571,10 @@ async def log_member_muted(member, reason=None, duration=None):
     await log_event_to_db(guild_id, "member_muted", data)
 
 async def log_member_unmuted(member, reason=None):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     if member.bot:
         return
 
@@ -582,6 +615,10 @@ async def log_member_unmuted(member, reason=None):
 
 
 async def log_member_banned(member, reason=None):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     if member.bot:
         return
 
@@ -627,6 +664,10 @@ async def log_member_banned(member, reason=None):
     await log_event_to_db(guild_id, "member_banned", data)
 
 async def log_voice_state_update(member, before, after):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     guild_id = member.guild.id
     formatted_time = datetime.utcnow().isoformat()
 
@@ -707,6 +748,10 @@ async def log_voice_state_update(member, before, after):
 
 
 async def check_and_log_channel_changes(guild, before, after, event_type):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     changes = {}
 
     previous_permissions = before.overwrites
@@ -732,6 +777,10 @@ async def check_and_log_channel_changes(guild, before, after, event_type):
 
 
 async def check_and_log_role_changes(guild, before, after, event_type):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     role_id = after.id if after else before.id
     role_data = await read_member_data_from_db(role_id, "role_data")
 
@@ -767,6 +816,10 @@ async def check_and_log_role_changes(guild, before, after, event_type):
 
 
 async def log_channel_event(event_type, before=None, after=None, guild=None, actor=None):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     async def extract_role(line):
         match = re.match(r"\*\*(.*?)\*\*:", line)
         return match.group(1) if match else None
@@ -917,6 +970,10 @@ async def log_channel_event(event_type, before=None, after=None, guild=None, act
 
 
 async def format_permissions(overwrites):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     if not overwrites:
         return "Нет доступных данных"
 
@@ -937,6 +994,10 @@ async def format_permissions(overwrites):
 
 
 async def log_role_event(event_type, before=None, after=None, guild=None, actor=None):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     if guild is None:
         return
 
@@ -1030,6 +1091,10 @@ async def log_role_event(event_type, before=None, after=None, guild=None, actor=
 
 
 async def format_role_permissions(overwrites):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     if not overwrites:
         return "Нет доступных данных"
 
@@ -1043,6 +1108,10 @@ async def format_role_permissions(overwrites):
 
 
 async def format_role_permissions_diff(previous_permissions, current_permissions):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     differences = []
     for perm in PERMISSIONS:
         prev_value = getattr(previous_permissions, perm, None)
@@ -1053,6 +1122,10 @@ async def format_role_permissions_diff(previous_permissions, current_permissions
 
 
 async def generate_color_change_image(old_color, new_color):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     image = Image.new("RGBA", (400, 200), (255, 255, 255, 0))
     draw = ImageDraw.Draw(image)
 

@@ -11,21 +11,39 @@ from utils import get_logger
 logger = get_logger()
 JSON_DIR = 'Modules/jsons'
 
+LOGGER_OFF = True
+
 def ensure_json_directory_exists():
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     if not os.path.exists(JSON_DIR):
         os.makedirs(JSON_DIR)
         logger.info(f"Directory {JSON_DIR} created.")
 
 def get_activity_file_path(guild_id):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     return os.path.join(JSON_DIR, f'last_activities_{guild_id}.json')
 
 def save_activity_data(guild_id, activity_data):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     ensure_json_directory_exists()
     activity_file = get_activity_file_path(guild_id)
     with open(activity_file, 'w') as file:
         json.dump(activity_data, file, indent=4)
 
 async def check_all_members(guild, db_conn):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     activity_data = {}
     roles = guild.roles
 
@@ -57,6 +75,10 @@ async def check_all_members(guild, db_conn):
 
 
 async def periodic_check_for_guilds(bot):
+    global LOGGER_OFF
+    if LOGGER_OFF:
+        return 0
+
     db_conn = await check_and_initialize_activities_db()
     while True:
         server_names = []
