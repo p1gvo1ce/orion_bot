@@ -21,8 +21,8 @@ def split_text(text, limit=2000):
 
 def extract_forum_description(desc: str) -> str:
     """
-    Если описание содержит текст, заключенный в одинарные обратные кавычки,
-    возвращает только его, иначе возвращает исходное описание.
+    Если в описании форума (topic) есть текст в одинарных бэктиках, берём только его.
+    Иначе возвращаем исходное описание.
     """
     match = re.search(r"`([^`]+)`", desc)
     if match:
@@ -32,6 +32,7 @@ def extract_forum_description(desc: str) -> str:
 @bot.tree.command(name="server_navigation", description="Собирает навигацию по серверу и выводит её")
 async def server_navigation(interaction: discord.Interaction):
     logger.info(f"[server_navigation] Запущена команда пользователем {interaction.user} (guild={interaction.guild})")
+
     guild = interaction.guild
     if guild is None:
         logger.warning("[server_navigation] Команда вызвана вне сервера (guild is None).")
@@ -42,7 +43,7 @@ async def server_navigation(interaction: discord.Interaction):
         ignored_category_ids = {968539522453352458, 1032908851269349456}
         pages = []
 
-        # 1. Обработка каналов без категории (General)
+        # Собираем каналы без категории ("General")
         general_channels = sorted(
             [ch for ch in guild.channels if ch.category is None and isinstance(ch, discord.abc.GuildChannel)],
             key=lambda ch: ch.position
@@ -52,18 +53,20 @@ async def server_navigation(interaction: discord.Interaction):
             section = "## General\n"
             for ch in general_channels:
                 mention = f"<#{ch.id}>"
-                # Если это форум, пробуем извлечь только текст из обратных кавычек
                 if isinstance(ch, discord.ForumChannel):
-                    desc = ch.topic if hasattr(ch, "topic") and ch.topic else ""
+                    desc = ch.topic if ch.topic else ""
                     desc = extract_forum_description(desc)
                 else:
-                    desc = ch.topic if hasattr(ch, "topic") and ch.topic else ""
-                section += f"{mention}\n```\n{desc}\n```\n\n"
+                    desc = ch.topic if ch.topic else ""
+
+                # ВАЖНО: закрывающие бэктики без лишних пустых строк
+                section += f"{mention}\n```\n{desc}\n```\n"
             pages.append(section)
 
-        # 2. Обработка категорий
+        # Обрабатываем категории
         categories = sorted(guild.categories, key=lambda c: c.position)
         logger.info(f"[server_navigation] Всего категорий: {len(categories)}.")
+
         for category in categories:
             if category.id in ignored_category_ids:
                 logger.info(f"[server_navigation] Пропускаем категорию {category.name} (ID={category.id}).")
@@ -71,23 +74,26 @@ async def server_navigation(interaction: discord.Interaction):
 
             logger.info(f"[server_navigation] Обрабатываем категорию {category.name} (ID={category.id}).")
             section = f"## {category.name}\n"
+
             cat_channels = sorted(category.channels, key=lambda ch: ch.position)
             for ch in cat_channels:
                 if isinstance(ch, (discord.TextChannel, discord.VoiceChannel, discord.ForumChannel)):
                     mention = f"<#{ch.id}>"
-                    # Если канал является форумом – извлекаем только текст из обратных кавычек
                     if isinstance(ch, discord.ForumChannel):
-                        desc = ch.topic if hasattr(ch, "topic") and ch.topic else ""
+                        desc = ch.topic if ch.topic else ""
                         desc = extract_forum_description(desc)
                     else:
-                        desc = ch.topic if hasattr(ch, "topic") and ch.topic else ""
-                    section += f"{mention}\n```\n{desc}\n```\n\n"
+                        desc = ch.topic if ch.topic else ""
+
+                    # То же самое: нет лишних пустых строк после закрытия бэктиков
+                    section += f"{mention}\n```\n{desc}\n```\n"
+
             pages.append(section)
 
         await interaction.response.send_message("Собираю навигацию по серверу…", ephemeral=True)
         logger.info("[server_navigation] Отправлено ephemeral-сообщение о начале работы.")
 
-        # Отправляем каждую страницу, разбивая на чанки, если они превышают 2000 символов
+        # Разбиваем и отправляем, чтобы не превышать лимит 2000 символов
         for idx, page in enumerate(pages, start=1):
             chunks = split_text(page, 2000)
             logger.info(f"[server_navigation] Страница {idx}/{len(pages)} делится на {len(chunks)} часть(ей).")
@@ -98,7 +104,7 @@ async def server_navigation(interaction: discord.Interaction):
         await interaction.followup.send("Навигация по серверу готова!", ephemeral=True)
         logger.info("[server_navigation] Команда завершена успешно.")
 
-    except Exception as e:
+    except Exception:
         logger.exception("[server_navigation] Произошла ошибка при формировании навигации!")
         await interaction.response.send_message(
             "Произошла ошибка при формировании навигации. Подробности в логах.",
@@ -106,5 +112,5 @@ async def server_navigation(interaction: discord.Interaction):
         )
 
 async def setup(bot: discord.Client):
-    # Функция setup нужна для загрузки расширения через bot.load_extension.
+    """ Пустая функция, чтобы мы могли подключить это как расширение через bot.load_extension. """
     pass
