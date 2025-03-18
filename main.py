@@ -85,6 +85,9 @@ async def main():
     if not token:
         print("Token not found.")
         token = await request_token(conn)
+
+    await bot.load_extension("Modules.safespace_commands")
+
     await run_bot(token, conn)
 
 
