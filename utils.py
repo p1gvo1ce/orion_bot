@@ -39,14 +39,14 @@ class CSVHandler(logging.Handler):
 
 # Настройка логгера
 logger = logging.getLogger('discord')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 csv_handler = CSVHandler()
 csv_handler.setFormatter(logging.Formatter('%(message)s'))
 logger.addHandler(csv_handler)
 
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.DEBUG)
 console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logger.addHandler(console_handler)
 

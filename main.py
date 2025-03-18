@@ -86,6 +86,7 @@ async def main():
         print("Token not found.")
         token = await request_token(conn)
 
+    # Загружаем наше отдельное "расширение" с глобальной командой
     await bot.load_extension("Modules.safespace_commands")
 
     await run_bot(token, conn)
