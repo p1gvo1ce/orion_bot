@@ -1,61 +1,57 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from utils import get_bot
 
-# Этот Cog содержит команды для сервера Safe Space.
-# Здесь можно добавлять и другие команды, специфичные для этого сервера.
+# Команды для Safe Space – здесь можно складывать все специфичные для этого сервера команды.
 class SafeSpaceCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @app_commands.command(name="server_navigation", description="Показывает навигацию по серверу Safe Space")
+    @app_commands.command(name="server_navigation", description="Вывод навигации по серверу с учетом порядка категорий и каналов")
     async def server_navigation(self, interaction: discord.Interaction):
         guild = interaction.guild
         if guild is None:
             await interaction.response.send_message("Эта команда работает только на сервере.", ephemeral=True)
             return
 
-        # Игнорируем категории с этими ID, пускай они остаются в стороне.
-        ignored_category_ids = {968539522453352458, 1032908851269349456}
+        pages = []
 
-        pages = []  # Список страниц навигации
-
-        # Каналы без категории группируем под заголовком General.
-        general_channels = [
-            ch for ch in guild.channels
-            if ch.category is None and isinstance(ch, (discord.TextChannel, discord.VoiceChannel))
-        ]
+        # 1. Каналы без категории – группируем под "General"
+        general_channels = sorted(
+            [ch for ch in guild.channels if ch.category is None and isinstance(ch, discord.abc.GuildChannel)],
+            key=lambda ch: ch.position
+        )
         if general_channels:
-            content = "## General\n"
-            # Здесь мы используем topic канала как описание, если оно задано.
+            section = "## General\n"
             for ch in general_channels:
+                mention = f"<#{ch.id}>"
+                # Для текстовых каналов берём topic, для голосовых – может быть пусто
                 desc = ch.topic if hasattr(ch, "topic") and ch.topic else ""
-                content += f"<#{ch.id}>\n```\n{desc}\n```\n\n"
-            pages.append(content)
+                section += f"{mention}\n```\n{desc}\n```\n\n"
+            pages.append(section)
 
-        # Проходим по всем категориям в порядке, соответствующем их позиции.
+        # 2. Обходим все категории (по позиции) и пропускаем те, что нужно игнорировать
+        ignored_category_ids = {968539522453352458, 1032908851269349456}
         categories = sorted(guild.categories, key=lambda c: c.position)
         for category in categories:
             if category.id in ignored_category_ids:
-                continue  # Игнорируем ненужные категории
-            content = f"## {category.name}\n"
-            for ch in sorted(category.channels, key=lambda c: c.position):
-                if isinstance(ch, (discord.TextChannel, discord.VoiceChannel)):
+                continue
+            section = f"## {category.name}\n"
+            # Обрабатываем каналы внутри категории, сортируя их по позиции
+            cat_channels = sorted(category.channels, key=lambda ch: ch.position)
+            for ch in cat_channels:
+                # Поддержка текстовых, голосовых и форумов
+                if isinstance(ch, (discord.TextChannel, discord.VoiceChannel, discord.ForumChannel)):
+                    mention = f"<#{ch.id}>"
                     desc = ch.topic if hasattr(ch, "topic") and ch.topic else ""
-                    content += f"<#{ch.id}>\n```\n{desc}\n```\n\n"
-            pages.append(content)
+                    section += f"{mention}\n```\n{desc}\n```\n\n"
+            pages.append(section)
 
-        # Отправляем каждую страницу в канал.
-        await interaction.response.send_message("Готовлю навигацию по серверу, подожди...", ephemeral=True)
+        # Отправляем результат. Если текст слишком длинный, можно разбить на несколько сообщений.
+        await interaction.response.send_message("Собираю навигацию по серверу…", ephemeral=True)
         for page in pages:
             await interaction.channel.send(page)
-        await interaction.followup.send("Навигация по серверу готова.", ephemeral=True)
+        await interaction.followup.send("Навигация по серверу готова!", ephemeral=True)
 
-    # Здесь можно добавить другие команды для Safe Space.
-    # Например, команда для получения актуальной информации о сервере,
-    # настройки специальных уведомлений и т.п.
-
-# Функция для регистрации Cog в боте.
 async def setup(bot: commands.Bot):
     await bot.add_cog(SafeSpaceCommands(bot))
