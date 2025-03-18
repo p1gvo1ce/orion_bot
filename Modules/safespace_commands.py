@@ -43,12 +43,15 @@ async def server_navigation(interaction: discord.Interaction):
         ignored_category_ids = {968539522453352458, 1032908851269349456}
         pages = []
 
-        # Собираем каналы без категории ("General")
+        # 1. Собираем каналы без категории ("General"), исключая CategoryChannel
         general_channels = sorted(
-            [ch for ch in guild.channels if ch.category is None and isinstance(ch, discord.abc.GuildChannel)],
+            [
+                ch for ch in guild.channels
+                if ch.category is None and isinstance(ch, (discord.TextChannel, discord.VoiceChannel, discord.ForumChannel))
+            ],
             key=lambda ch: ch.position
         )
-        logger.info(f"[server_navigation] Найдено {len(general_channels)} канал(ов) без категории.")
+        logger.info(f"[server_navigation] Найдено {len(general_channels)} канал(ов) без категории (не считая CategoryChannel).")
         if general_channels:
             section = "## General\n"
             for ch in general_channels:
@@ -58,12 +61,10 @@ async def server_navigation(interaction: discord.Interaction):
                     desc = extract_forum_description(desc)
                 else:
                     desc = ch.topic if ch.topic else ""
-
-                # ВАЖНО: закрывающие бэктики без лишних пустых строк
                 section += f"{mention}\n```\n{desc}\n```\n"
             pages.append(section)
 
-        # Обрабатываем категории
+        # 2. Обрабатываем категории
         categories = sorted(guild.categories, key=lambda c: c.position)
         logger.info(f"[server_navigation] Всего категорий: {len(categories)}.")
 
@@ -74,9 +75,10 @@ async def server_navigation(interaction: discord.Interaction):
 
             logger.info(f"[server_navigation] Обрабатываем категорию {category.name} (ID={category.id}).")
             section = f"## {category.name}\n"
-
             cat_channels = sorted(category.channels, key=lambda ch: ch.position)
+
             for ch in cat_channels:
+                # Только если это текст/голос/форум
                 if isinstance(ch, (discord.TextChannel, discord.VoiceChannel, discord.ForumChannel)):
                     mention = f"<#{ch.id}>"
                     if isinstance(ch, discord.ForumChannel):
@@ -84,16 +86,15 @@ async def server_navigation(interaction: discord.Interaction):
                         desc = extract_forum_description(desc)
                     else:
                         desc = ch.topic if ch.topic else ""
-
-                    # То же самое: нет лишних пустых строк после закрытия бэктиков
                     section += f"{mention}\n```\n{desc}\n```\n"
 
             pages.append(section)
 
+        # Отправляем ephemeral-сообщение, чтобы пользователь видел, что мы начали
         await interaction.response.send_message("Собираю навигацию по серверу…", ephemeral=True)
         logger.info("[server_navigation] Отправлено ephemeral-сообщение о начале работы.")
 
-        # Разбиваем и отправляем, чтобы не превышать лимит 2000 символов
+        # Отправляем каждую страницу, разбивая если >2000 символов
         for idx, page in enumerate(pages, start=1):
             chunks = split_text(page, 2000)
             logger.info(f"[server_navigation] Страница {idx}/{len(pages)} делится на {len(chunks)} часть(ей).")
@@ -104,7 +105,7 @@ async def server_navigation(interaction: discord.Interaction):
         await interaction.followup.send("Навигация по серверу готова!", ephemeral=True)
         logger.info("[server_navigation] Команда завершена успешно.")
 
-    except Exception:
+    except Exception as e:
         logger.exception("[server_navigation] Произошла ошибка при формировании навигации!")
         await interaction.response.send_message(
             "Произошла ошибка при формировании навигации. Подробности в логах.",
@@ -112,5 +113,5 @@ async def server_navigation(interaction: discord.Interaction):
         )
 
 async def setup(bot: discord.Client):
-    """ Пустая функция, чтобы мы могли подключить это как расширение через bot.load_extension. """
+    """Функция setup нужна для bot.load_extension, если используешь расширения."""
     pass
