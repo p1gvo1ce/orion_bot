@@ -6,7 +6,8 @@ from utils import get_bot, get_logger
 bot = get_bot()
 logger = get_logger()
 
-def split_text(text, limit=2000):
+
+def split_text(text: str, limit=2000) -> list[str]:
     """Разбивает текст на части не длиннее limit символов, стараясь резать по переводу строки."""
     chunks = []
     while len(text) > limit:
@@ -19,19 +20,53 @@ def split_text(text, limit=2000):
         chunks.append(text)
     return chunks
 
-def extract_forum_description(desc: str) -> str:
+
+def extract_between_backticks(text: str) -> str | None:
     """
-    Если в описании форума (topic) есть текст в одинарных бэктиках, берём только его.
-    Иначе возвращаем исходное описание.
+    Ищет в строке содержимое, заключённое в одинарные бэктики `` `...` ``.
+    Возвращает найденное или None, если ничего не найдено.
     """
-    match = re.search(r"`([^`]+)`", desc)
+    match = re.search(r"`([^`]+)`", text)
     if match:
         return match.group(1)
-    return desc
+    return None
 
-@bot.tree.command(name="server_navigation", description="Собирает навигацию по серверу и выводит её.")
+
+def get_description_for_channel(ch: discord.abc.GuildChannel) -> str | None:
+    """
+    Возвращает описание канала (строго вырезая из бэктиков),
+    или None, если не удалось вытащить такое описание.
+
+    1) ForumChannel -> смотрим ch.topic
+    2) VoiceChannel -> смотрим ch.name
+    3) TextChannel -> смотрим ch.topic
+    4) Остальное -> не обрабатываем
+    """
+    # Forum
+    if isinstance(ch, discord.ForumChannel):
+        if ch.topic:
+            return extract_between_backticks(ch.topic)
+        return None
+
+    # Voice
+    elif isinstance(ch, discord.VoiceChannel):
+        # В голосовом канале описание спрятано в имени
+        return extract_between_backticks(ch.name)
+
+    # Text
+    elif isinstance(ch, discord.TextChannel):
+        if ch.topic:
+            return extract_between_backticks(ch.topic)
+        return None
+
+    # Всё, что сюда дойдёт – не обрабатываем
+    return None
+
+
+@bot.tree.command(name="server_navigation",
+                  description="Собирает навигацию по серверу и выводит её согласно новым правилам.")
 async def server_navigation(interaction: discord.Interaction):
-    logger.debug(f"[server_navigation] Запущена команда пользователем {interaction.user} (guild={interaction.guild})")
+    logger.info(f"[server_navigation] Запущена команда пользователем {interaction.user} (guild={interaction.guild})")
 
     guild = interaction.guild
     if guild is None:
@@ -40,80 +75,81 @@ async def server_navigation(interaction: discord.Interaction):
         return
 
     try:
+        # Категории, которые игнорируем
         ignored_category_ids = {968539522453352458, 1032908851269349456}
         pages = []
 
-        # Собираем каналы без категории (General), исключая CategoryChannel
+        # 1) Каналы без категории ("General"), но только Text/Voice/Forum
+        #    при этом показываем их только если получилось извлечь описание
         general_channels = sorted(
             [
                 ch for ch in guild.channels
-                if ch.category is None and isinstance(ch, (discord.TextChannel, discord.VoiceChannel, discord.ForumChannel))
+                if ch.category is None and isinstance(ch,
+                                                      (discord.TextChannel, discord.VoiceChannel, discord.ForumChannel))
             ],
             key=lambda ch: ch.position
         )
-        logger.debug(f"[server_navigation] Найдено {len(general_channels)} канал(ов) без категории (не считая CategoryChannel).")
+        logger.info(
+            f"[server_navigation] Найдено {len(general_channels)} канал(ов) без категории (не считая CategoryChannel).")
 
-        if general_channels:
-            section = "## General\n"
-            for ch in general_channels:
-                mention = f"<#{ch.id}>"
+        # Собираем их в один раздел, если есть хоть один канал с норм описанием
+        section_general = "## General\n"
+        channels_in_general_section = 0
+        for ch in general_channels:
+            desc = get_description_for_channel(ch)
+            if desc is None:
+                # Если описания (бэктиков) нет, пропускаем
+                continue
+            mention = f"<#{ch.id}>"
+            section_general += f"{mention}\n```\n{desc}\n```\n"
+            channels_in_general_section += 1
 
-                # По умолчанию описание пустое
-                desc = ""
+        if channels_in_general_section > 0:
+            pages.append(section_general)
 
-                # Проверяем, есть ли у объекта атрибут .topic
-                if hasattr(ch, "topic") and ch.topic:
-                    desc = ch.topic
-
-                # Если форум – извлекаем кусок описания из обратных кавычек
-                if isinstance(ch, discord.ForumChannel):
-                    desc = extract_forum_description(desc)
-
-                section += f"{mention}\n```\n{desc}\n```\n"
-            pages.append(section)
-
-        # Обрабатываем категории
+        # 2) Обрабатываем категории
         categories = sorted(guild.categories, key=lambda c: c.position)
-        logger.debug(f"[server_navigation] Всего категорий: {len(categories)}.")
+        logger.info(f"[server_navigation] Всего категорий: {len(categories)}.")
+
         for category in categories:
             if category.id in ignored_category_ids:
-                logger.debug(f"[server_navigation] Пропускаем категорию {category.name} (ID={category.id}).")
+                logger.info(f"[server_navigation] Пропускаем категорию {category.name} (ID={category.id}).")
                 continue
 
-            logger.debug(f"[server_navigation] Обрабатываем категорию {category.name} (ID={category.id}).")
+            logger.info(f"[server_navigation] Обрабатываем категорию {category.name} (ID={category.id}).")
             section = f"## {category.name}\n"
             cat_channels = sorted(category.channels, key=lambda ch: ch.position)
 
+            channels_in_cat = 0
             for ch in cat_channels:
                 if isinstance(ch, (discord.TextChannel, discord.VoiceChannel, discord.ForumChannel)):
+                    desc = get_description_for_channel(ch)
+                    if desc is None:
+                        # Нет текста в бэктиках – пропускаем
+                        continue
+
                     mention = f"<#{ch.id}>"
-
-                    desc = ""
-                    if hasattr(ch, "topic") and ch.topic:
-                        desc = ch.topic
-
-                    # Если это форум – извлекаем кусок описания из обратных кавычек
-                    if isinstance(ch, discord.ForumChannel):
-                        desc = extract_forum_description(desc)
-
                     section += f"{mention}\n```\n{desc}\n```\n"
+                    channels_in_cat += 1
 
-            pages.append(section)
+            # Только если в категории есть каналы с описанием, добавляем эту страницу
+            if channels_in_cat > 0:
+                pages.append(section)
 
-        # Отправляем ephemeral-уведомление
+        # Шлём ephemeral-сообщение о запуске
         await interaction.response.send_message("Собираю навигацию по серверу…", ephemeral=True)
-        logger.debug("[server_navigation] Отправлено ephemeral-сообщение о начале работы.")
+        logger.info("[server_navigation] Отправлено ephemeral-сообщение о начале работы.")
 
-        # Отправляем каждую страницу, разбивая если >2000 символов
+        # Режем каждую страницу на куски
         for idx, page in enumerate(pages, start=1):
             chunks = split_text(page, 2000)
-            logger.debug(f"[server_navigation] Страница {idx}/{len(pages)} -> {len(chunks)} chunk(ов).")
+            logger.info(f"[server_navigation] Страница {idx}/{len(pages)} -> {len(chunks)} chunk(ов).")
             for chunk in chunks:
-                logger.debug(f"[server_navigation] Отправляю chunk длиной {len(chunk)}.")
+                logger.info(f"[server_navigation] Отправляю chunk длиной {len(chunk)}.")
                 await interaction.channel.send(chunk)
 
         await interaction.followup.send("Навигация по серверу готова!", ephemeral=True)
-        logger.debug("[server_navigation] Команда завершена успешно.")
+        logger.info("[server_navigation] Команда завершена успешно.")
 
     except Exception as e:
         logger.exception("[server_navigation] Произошла ошибка при формировании навигации!")
@@ -122,6 +158,7 @@ async def server_navigation(interaction: discord.Interaction):
             ephemeral=True
         )
 
+
 async def setup(bot: discord.Client):
-    """Пустая функция для bot.load_extension, если используешь расширения."""
+    """Пустая функция, если используешь bot.load_extension("Modules.safespace_commands")."""
     pass
