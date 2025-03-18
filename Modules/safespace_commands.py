@@ -13,7 +13,7 @@ async def server_navigation(interaction: discord.Interaction):
     не привязана к конкретному Guild ID.
     """
 
-    logger.debug(f"[server_navigation] Запущена команда пользователем {interaction.user} (guild={interaction.guild})")
+    logger.info(f"[server_navigation] Запущена команда пользователем {interaction.user} (guild={interaction.guild})")
 
     guild = interaction.guild
     if guild is None:
@@ -31,7 +31,7 @@ async def server_navigation(interaction: discord.Interaction):
             [ch for ch in guild.channels if ch.category is None and isinstance(ch, discord.abc.GuildChannel)],
             key=lambda ch: ch.position
         )
-        logger.debug(f"[server_navigation] Найдено {len(general_channels)} канал(ов) без категории.")
+        logger.info(f"[server_navigation] Найдено {len(general_channels)} канал(ов) без категории.")
 
         if general_channels:
             section = "## General\n"
@@ -43,14 +43,14 @@ async def server_navigation(interaction: discord.Interaction):
 
         # 2. Обходим категории по позиции
         categories = sorted(guild.categories, key=lambda c: c.position)
-        logger.debug(f"[server_navigation] Всего категорий: {len(categories)}.")
+        logger.info(f"[server_navigation] Всего категорий: {len(categories)}.")
 
         for category in categories:
             if category.id in ignored_category_ids:
-                logger.debug(f"[server_navigation] Пропускаем категорию {category.name} (ID={category.id}).")
+                logger.info(f"[server_navigation] Пропускаем категорию {category.name} (ID={category.id}).")
                 continue
 
-            logger.debug(f"[server_navigation] Обрабатываем категорию {category.name} (ID={category.id}).")
+            logger.info(f"[server_navigation] Обрабатываем категорию {category.name} (ID={category.id}).")
             section = f"## {category.name}\n"
 
             cat_channels = sorted(category.channels, key=lambda ch: ch.position)
@@ -64,16 +64,16 @@ async def server_navigation(interaction: discord.Interaction):
 
         # Шлём ephemeral-сообщение о том, что идёт сбор
         await interaction.response.send_message("Собираю навигацию по серверу…", ephemeral=True)
-        logger.debug("[server_navigation] Отправлено ephemeral-сообщение о начале работы.")
+        logger.info("[server_navigation] Отправлено ephemeral-сообщение о начале работы.")
 
         # Отправляем полученные страницы в тот же канал
         for idx, page in enumerate(pages, start=1):
-            logger.debug(f"[server_navigation] Отправляем страницу {idx}/{len(pages)} (длина={len(page)}).")
+            logger.info(f"[server_navigation] Отправляем страницу {idx}/{len(pages)} (длина={len(page)}).")
             await interaction.channel.send(page)
 
         # Завершаем
         await interaction.followup.send("Навигация по серверу готова!", ephemeral=True)
-        logger.debug("[server_navigation] Успешно закончили отправку навигации.")
+        logger.info("[server_navigation] Успешно закончили отправку навигации.")
 
     except Exception as e:
         logger.exception("[server_navigation] Произошла ошибка при формировании навигации!")
