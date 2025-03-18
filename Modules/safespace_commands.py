@@ -1,14 +1,14 @@
 import discord
 import re
 from discord import app_commands
+from discord.app_commands import checks
 from utils import get_bot, get_logger
 
 bot = get_bot()
 logger = get_logger()
 
-
 def split_text(text: str, limit=2000) -> list[str]:
-    """Разбивает text на части не длиннее limit символов, стараясь резать по '\n'."""
+    """Разбивает text на куски не длиннее limit, стараясь резать по переводу строки."""
     chunks = []
     while len(text) > limit:
         split_point = text.rfind('\n', 0, limit)
@@ -20,22 +20,23 @@ def split_text(text: str, limit=2000) -> list[str]:
         chunks.append(text)
     return chunks
 
-
 def extract_between_backticks(text: str) -> str | None:
-    """Возвращает содержимое между `...` или None, если ничего не найдено."""
+    """
+    Ищет в строке содержимое, заключённое в одинарные бэктики `...`,
+    возвращает None, если не найдено.
+    """
     match = re.search(r"`([^`]+)`", text)
     if match:
         return match.group(1)
     return None
 
-
 def get_description_for_channel(ch: discord.abc.GuildChannel) -> str | None:
     """
-    Логика: 
-    - ForumChannel -> ищем бэктики в ch.topic
-    - VoiceChannel -> ищем бэктики в ch.name
-    - TextChannel -> если есть topic, берём как есть
-    - Иначе None -> пропускаем канал
+    Логика извлечения описания:
+    - ForumChannel: ищем бэктики в ch.topic
+    - VoiceChannel: ищем бэктики в ch.name
+    - TextChannel: берём весь ch.topic, если не пустой (без бэктиков)
+    - Иначе None -> пропускаем
     """
     if isinstance(ch, discord.ForumChannel):
         if ch.topic:
@@ -50,32 +51,22 @@ def get_description_for_channel(ch: discord.abc.GuildChannel) -> str | None:
 
     return None
 
-
 def mask_secret_category(name: str) -> str:
     """
-    Выделяет в начале строки все «не-буквенные и не-цифровые» символы
-    (например, эмодзи/знаки пунктуации). Пример:
-
-    💥Больные Ублюдки -> 💥Секретная категория
-    🍕Пример -> 🍕Секретная категория
-    Много.эмодзи??? 😈Hello -> Много.эмодзи??? 😈Секретная категория (осторожно!)
-
-    Если тебе нужно оставить строго «первые эмодзи» и отрезать всю остальную часть,
-    – см. регулярку. Сейчас она оставляет в префиксе все подряд символы, пока не наткнётся
-    на букву/цифру (англ/рус), и только потом вставляет «Секретная категория».
+    Выделяем префикс (эмодзи/знаки) и заменяем остальное на 'Секретная категория'.
+    Пример: '💥Больные Ублюдки' -> '💥Секретная категория'
     """
-    # Ищем последовательность не-буквенных/не-цифровых символов в начале
     match = re.match(r'^([^a-zA-Zа-яА-Я0-9]+)', name)
-    if match:
-        prefix = match.group(1)
-    else:
-        prefix = ''  # Никаких эмодзи не нашлось
-
+    prefix = match.group(1) if match else ''
     return f"{prefix}Секретная категория"
 
-
-@bot.tree.command(name="server_navigation", description="Собирает навигацию по серверу, скрывая секретные категории.")
+@bot.tree.command(name="server_navigation", description="Собирает навигацию по серверу и выводит её (только для админов).")
+@checks.has_permissions(administrator=True)
 async def server_navigation(interaction: discord.Interaction):
+    """
+    Команда видна глобально, но при вызове проверяются права администратора.
+    При отсутствии прав Discord вернёт пользователю ошибку "Missing Permissions".
+    """
     logger.info(f"[server_navigation] Запущена команда пользователем {interaction.user} (guild={interaction.guild})")
 
     guild = interaction.guild
@@ -85,14 +76,14 @@ async def server_navigation(interaction: discord.Interaction):
         return
 
     try:
-        # Список айдишников секретных категорий
+        # Список секретных категорий (просто пример, замени на свои ID)
         secret_category_ids = {1196415360879050842}
-        # Категории, которые полностью пропускаем
+        # Айди категорий, которые полностью игнорируем
         ignored_category_ids = {968539522453352458, 1032908851269349456}
 
         pages = []
 
-        # 1) Каналы без категории (General)
+        # 1) "General" – каналы без категории (Forum / Voice / Text)
         all_general_channels = [
             ch for ch in guild.channels
             if ch.category is None and isinstance(ch, (discord.TextChannel, discord.VoiceChannel, discord.ForumChannel))
@@ -105,6 +96,7 @@ async def server_navigation(interaction: discord.Interaction):
             desc = get_description_for_channel(ch)
             if desc is None:
                 continue
+
             mention = f"<#{ch.id}>"
             section_general += f"{mention}\n```\n{desc}\n```\n"
             channels_in_general_section += 1
@@ -112,29 +104,28 @@ async def server_navigation(interaction: discord.Interaction):
         if channels_in_general_section > 0:
             pages.append(section_general)
 
-        # 2) Категории
+        # 2) Проходим по категориям
         categories = sorted(guild.categories, key=lambda c: c.position)
         for category in categories:
             if category.id in ignored_category_ids:
                 logger.info(f"[server_navigation] Пропускаем категорию {category.name} (ID={category.id}).")
                 continue
 
-            # Если категория секретная — меняем название
+            # Проверяем, секретная ли категория
             if category.id in secret_category_ids:
                 cat_name = mask_secret_category(category.name)
             else:
                 cat_name = category.name
 
             section = f"## {cat_name}\n"
-
             cat_channels = sorted(category.channels, key=lambda ch: ch.position)
+
             channels_in_cat = 0
             for ch in cat_channels:
                 if isinstance(ch, (discord.TextChannel, discord.VoiceChannel, discord.ForumChannel)):
                     desc = get_description_for_channel(ch)
                     if desc is None:
                         continue
-
                     mention = f"<#{ch.id}>"
                     section += f"{mention}\n```\n{desc}\n```\n"
                     channels_in_cat += 1
@@ -142,9 +133,10 @@ async def server_navigation(interaction: discord.Interaction):
             if channels_in_cat > 0:
                 pages.append(section)
 
+        # Сообщаем, что начали собирать навигацию
         await interaction.response.send_message("Собираю навигацию по серверу…", ephemeral=True)
 
-        # Отправляем страницы, режем если >2000 символов
+        # Отправляем результаты
         for idx, page in enumerate(pages, start=1):
             chunks = split_text(page, 2000)
             for chunk in chunks:
@@ -158,7 +150,6 @@ async def server_navigation(interaction: discord.Interaction):
             "Произошла ошибка при формировании навигации. Смотри логи.",
             ephemeral=True
         )
-
 
 async def setup(bot: discord.Client):
     pass
