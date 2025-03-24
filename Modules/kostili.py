@@ -14,7 +14,7 @@ async def update_megakostyl_channel(bot):
     delay = (10 - remainder) * 60 - now.second - now.microsecond / 1e6
     if delay < 0:
         delay = 0
-    await asyncio.sleep(delay)
+    #await asyncio.sleep(delay)
 
     while not bot.is_closed():
         guild = bot.get_guild(702588231614595172)
