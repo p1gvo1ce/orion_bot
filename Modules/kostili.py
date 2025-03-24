@@ -74,31 +74,24 @@ async def update_megakostyl_channel(bot):
             print("Ошибка при создании канала:", e)
 
         # Вычисляем интервалы
-        deletion_interval = (deletion_end - deletion_start).total_seconds() if deletion_start and deletion_end else None
-        creation_interval = (creation_end - creation_start).total_seconds() if creation_start and creation_end else None
+        deletion_interval = (deletion_end - deletion_start).total_seconds() if deletion_start and deletion_end else 0
+        creation_interval = (creation_end - creation_start).total_seconds() if creation_start and creation_end else 0
+        total_interval = deletion_interval + creation_interval
 
-        # Определяем цвет embed по времени создания канала
-        if creation_interval is not None:
-            if creation_interval >= 5:
-                embed_color = "#8B0000"
-            elif creation_interval <= 1:
-                embed_color = "#00FF7F"
-            else:
-                embed_color = "#20B2AA"
+        # Определяем цвет embed по суммарному времени
+        if total_interval >= 5:
+            embed_color = "#8B0000"
+        elif total_interval <= 1:
+            embed_color = "#00FF7F"
         else:
-            embed_color = "#0000FF"  # Если что-то пошло не так
+            embed_color = "#20B2AA"
 
         # Формируем embed-отчёт
         embed = discord.Embed(title="MEGAKOSTYL Update Report", color=discord.Color.from_str(embed_color))
-        #embed.add_field(name="Новое имя канала", value=new_channel_name, inline=False)
-        if deletion_interval is not None:
-            embed.add_field(name="Интервал удаления", value=f"{deletion_interval:.3f} секунд", inline=False)
-        else:
-            embed.add_field(name="Интервал удаления", value="Канал не найден", inline=False)
-        if creation_interval is not None:
-            embed.add_field(name="Интервал создания", value=f"{creation_interval:.3f} секунд", inline=False)
-        else:
-            embed.add_field(name="Интервал создания", value="Ошибка создания", inline=False)
+        embed.add_field(name="Новое имя канала", value=new_channel_name, inline=False)
+        embed.add_field(name="Интервал удаления", value=f"{deletion_interval:.3f} секунд", inline=False)
+        embed.add_field(name="Интервал создания", value=f"{creation_interval:.3f} секунд", inline=False)
+        embed.add_field(name="Суммарное время", value=f"{total_interval:.3f} секунд", inline=False)
         embed.timestamp = datetime.utcnow()
 
         # Отправляем embed в текстовый канал с ID 1353656805116477530
