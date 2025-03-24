@@ -20,7 +20,7 @@ from Modules.events import (bot_start, join_from_invite, greetings_delete_greeti
 from Modules.logger import log_new_message, log_edited_message, log_deleted_message
 from Modules.ublyudoshnaya import bolnoy_ublyudok
 
-from Modules.kostili import update_megakostyl_channel
+from Modules.kostili import update_megakostyl_channel, keep_api_alive
 
 GITHUB_API_URL = "https://api.github.com/repos/p1gvo1ce/orion_bot/commits/master"
 
@@ -93,6 +93,7 @@ async def main():
 
     # Запускаем костыль для голосового канала (переименование каждую минуту)
     asyncio.create_task(update_megakostyl_channel(bot))
+    asyncio.create_task(keep_api_alive(bot))
 
     await run_bot(token, conn)
 

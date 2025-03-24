@@ -105,3 +105,13 @@ async def update_megakostyl_channel(bot):
 
         # Ждем 10 минут до следующей итерации
         await asyncio.sleep(300)
+
+async def keep_api_alive(bot):
+    await bot.wait_until_ready()
+    while not bot.is_closed():
+        try:
+            # Отправляем запрос, чтобы "разбудить" API
+            _ = await bot.fetch_guild(702588231614595172)
+        except Exception as e:
+            print("Ошибка пинга API:", e)
+        await asyncio.sleep(60)  # Пингуем каждые 2 минуты
