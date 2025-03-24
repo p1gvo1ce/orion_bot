@@ -19,7 +19,7 @@ async def rename_kostyl_channel(bot):
             channel = guild.get_channel(1353641396099088384)
             if channel:
                 moscow_time = datetime.utcnow() + timedelta(hours=3)
-                new_name = f"костыль {moscow_time.strftime('%H:%M')}"
+                new_name = f"MEGAKOSTYL {moscow_time.strftime('%H:%M')}"
                 try:
                     await channel.edit(name=new_name)
                     print(f"[MEGAKOSTYL] Канал переименован в: {new_name}")

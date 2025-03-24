@@ -34,7 +34,6 @@ async def bolnoy_ublyudok(message):
     channel_bub = bot.get_channel(1196416516120379522)
     role = 1196412886944329738
     role = message.guild.get_role(role)
-    print('сработала ублюдошная')
     if 'я' in text and 'больн' in text and 'ублюд' in text and 'не' not in text:
         print('признание ублюдка')
         if message.author.id in bub_block_users:
