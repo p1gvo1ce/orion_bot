@@ -112,4 +112,4 @@ async def update_megakostyl_channel(bot):
             print("Текстовый канал для отчётов не найден.")
 
         # Ждем 10 минут до следующей итерации
-        await asyncio.sleep(600)
+        await asyncio.sleep(300)
