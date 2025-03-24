@@ -50,7 +50,7 @@ async def update_megakostyl_channel(bot):
                 print("Ошибка при удалении канала:", e)
         else:
             print("Канал с 'MEGAKOSTYL' не найден в категории.")
-        await asyncio.sleep(60)
+        await asyncio.sleep(30)
 
         # Формируем новое имя канала с актуальным временем (МСК)
         moscow_time = datetime.utcnow() + timedelta(hours=3)
@@ -115,4 +115,4 @@ async def keep_api_alive(bot):
             _ = await bot.fetch_guild(702588231614595172)
         except Exception as e:
             print("Ошибка пинга API:", e)
-        await asyncio.sleep(60)  # Пингуем каждые 2 минуты
+        await asyncio.sleep(30)  # Пингуем каждые 2 минуты
