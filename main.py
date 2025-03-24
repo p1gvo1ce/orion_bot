@@ -20,6 +20,8 @@ from Modules.events import (bot_start, join_from_invite, greetings_delete_greeti
 from Modules.logger import log_new_message, log_edited_message, log_deleted_message
 from Modules.ublyudoshnaya import bolnoy_ublyudok
 
+from Modules.kostili import rename_kostyl_channel
+
 GITHUB_API_URL = "https://api.github.com/repos/p1gvo1ce/orion_bot/commits/master"
 
 tracemalloc.start()
@@ -88,8 +90,12 @@ async def main():
 
     # Загружаем наше отдельное "расширение" с глобальной командой
     await bot.load_extension("Modules.safespace_commands")
+    bot.loop.create_task(rename_kostyl_channel(bot))
 
     await run_bot(token, conn)
+
+
+
 
 
 if __name__ == "__main__":
