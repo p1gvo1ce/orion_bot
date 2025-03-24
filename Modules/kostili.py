@@ -90,7 +90,7 @@ async def update_megakostyl_channel(bot):
         embed = discord.Embed(title="MEGAKOSTYL Update Report", color=discord.Color.from_str(embed_color))
         #embed.add_field(name="Интервал удаления", value=f"{deletion_interval:.3f} секунд", inline=False)
         #embed.add_field(name="Интервал создания", value=f"{creation_interval:.3f} секунд", inline=False)
-        embed.add_field(name="Суммарное время", value=f"{total_interval:.3f} секунд\n{deletion_interval:.3f}|{creation_interval:.3f}", inline=False)
+        embed.add_field(name="Суммарное время", value=f"{total_interval:.3f} секунд\n{deletion_interval:.3f} | {creation_interval:.3f}", inline=False)
         embed.timestamp = datetime.utcnow()
 
         # Отправляем embed в текстовый канал с ID 1353656805116477530
