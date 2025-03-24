@@ -6,9 +6,11 @@ async def rename_kostyl_channel(bot):
     # Ждем, пока бот полностью запустится
     await bot.wait_until_ready()
 
-    # Вычисляем, сколько времени осталось до начала следующей полной минуты (секунды = 0)
-    now = datetime.utcnow() + timedelta(hours=3)  # МСК время (UTC+3)
-    delay = 60 - now.second - now.microsecond / 1e6
+    # Вычисляем, сколько осталось до начала следующего интервала кратного 10 минутам (например, 00, 10, 20, ...)
+    now = datetime.utcnow() + timedelta(hours=3)  # МСК (UTC+3)
+    minutes = now.minute
+    remainder = minutes % 10
+    delay = (10 - remainder) * 60 - now.second - now.microsecond / 1e6
     await asyncio.sleep(delay)
 
     while not bot.is_closed():
@@ -23,5 +25,5 @@ async def rename_kostyl_channel(bot):
                     print(f"[MEGAKOSTYL] Канал переименован в: {new_name}")
                 except Exception as e:
                     print("Ошибка при переименовании канала:", e)
-        # Ждем ровно 60 секунд до следующего запуска
-        await asyncio.sleep(60)
+        # Ждем 10 минут (600 секунд) до следующей актуализации
+        await asyncio.sleep(600)
