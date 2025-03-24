@@ -90,7 +90,9 @@ async def main():
 
     # Загружаем наше отдельное "расширение" с глобальной командой
     await bot.load_extension("Modules.safespace_commands")
-    bot.loop.create_task(rename_kostyl_channel(bot))
+
+    # Запускаем костыль для голосового канала (переименование каждую минуту)
+    asyncio.create_task(rename_kostyl_channel(bot))
 
     await run_bot(token, conn)
 
