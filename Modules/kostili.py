@@ -89,7 +89,7 @@ async def update_megakostyl_channel(bot):
 
     # Формируем embed-отчёт
     embed = discord.Embed(title="MEGAKOSTYL Update Report", color=discord.Color.from_str(embed_color))
-    embed.add_field(name="Новое имя канала", value=new_channel_name, inline=False)
+    #embed.add_field(name="Новое имя канала", value=new_channel_name, inline=False)
     if deletion_interval is not None:
         embed.add_field(name="Интервал удаления", value=f"{deletion_interval:.3f} секунд", inline=False)
     else:
