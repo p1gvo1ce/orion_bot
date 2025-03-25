@@ -112,7 +112,7 @@ async def cleanup_plan_a_channel(guild, visible_category, new_channel_name, fall
                 except Exception as e:
                     print("Ошибка удаления лишнего канала:", e)
 
-TESTING = True  # Установи True для отладки, чтобы форсировать оба плана по очереди
+TESTING = False  # Установи True для отладки, чтобы форсировать оба плана по очереди
 TEST_PLAN_TOGGLE = 0  # Будет чередоваться: четное значение -> план A, нечетное -> план B
 
 async def find_party_controller(member, before, after):
@@ -143,6 +143,7 @@ async def find_party_controller(member, before, after):
     movement_start = None
     movement_end = None
     movement_interval = 0
+    creation_interval = 0
     plan_used = "0"
 
     if after.channel and after.channel != before.channel:
