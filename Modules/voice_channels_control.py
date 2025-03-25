@@ -338,7 +338,7 @@ async def find_party_controller(member, before, after):
     else:
         embed_color = "#20B2AA"
 
-    report_embed = discord.Embed(title="Private Voice Update Report", color=discord.Color.from_str(embed_color))
+    report_embed = discord.Embed(title="Private Voice Update Report 111", color=discord.Color.from_str(embed_color))
     report_embed.add_field(name="План", value=f"План {plan_used}", inline=False)
     report_embed.add_field(name="Время подключения", value=connection_time.strftime('%Y-%m-%d %H:%M:%S.%f'),
                            inline=False)
