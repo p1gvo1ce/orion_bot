@@ -144,7 +144,7 @@ async def find_party_controller(member, before, after):
     movement_end = None
     movement_interval = 0
     creation_interval = 0
-    plan_used = "0"
+    plan_used = None
 
     if after.channel and after.channel != before.channel:
         connection_time = datetime.utcnow()
@@ -338,7 +338,7 @@ async def find_party_controller(member, before, after):
     else:
         embed_color = "#20B2AA"
 
-    report_embed = discord.Embed(title="Private Voice Update Report 111", color=discord.Color.from_str(embed_color))
+    report_embed = discord.Embed(title="Private Voice Update Report", color=discord.Color.from_str(embed_color))
     report_embed.add_field(name="План", value=f"План {plan_used}", inline=False)
     report_embed.add_field(name="Время подключения", value=connection_time.strftime('%Y-%m-%d %H:%M:%S.%f'),
                            inline=False)
@@ -367,7 +367,14 @@ async def find_party_controller(member, before, after):
     report_embed.timestamp = datetime.utcnow()
 
     report_channel = guild.get_channel(1353656805116477530)
-    if report_channel and plan_used:
+
+    # В конце функции, перед формированием embed, делаем проверку:
+    if plan_used is None or new_channel is None:
+        # Значит, мы не делали фактическое создание/обновление канала
+        logger.info("Пропускаем отправку embed, т.к. не было создания канала.")
+        return
+
+    if report_channel:
         try:
             await report_channel.send(embed=report_embed)
         except Exception as e:
