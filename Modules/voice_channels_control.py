@@ -94,31 +94,42 @@ async def cleanup_plan_a_channel(guild, visible_category, new_channel_name, fall
                 except Exception as e:
                     print("Ошибка удаления лишнего канала:", e)
 
+TESTING = True  # Установи True для отладки, чтобы форсировать оба плана по очереди
+TEST_PLAN_TOGGLE = 0  # Будет чередоваться: четное значение -> план A, нечетное -> план B
+
 async def find_party_controller(member, before, after):
+    global TESTING, TEST_PLAN_TOGGLE
 
     logger = get_logger()
-    logger.info(f"[START] Обработка изменения голосового канала для участника {member.id}")
+    connection_time = datetime.utcnow()
+    logger.info(
+        f"[START] [{connection_time.strftime('%Y-%m-%d %H:%M:%S.%f')}] Обработка изменения голосового канала для участника {member.id}")
 
     guild_id = member.guild.id
     guild = member.guild
-    # Изначально имя канала – имя участника (или его ник)
+    # Имя канала по умолчанию – имя или ник участника
     channel_name = member.nick if member.nick else member.name
 
     # Если участник покинул предыдущий канал, удаляем временные сообщения и канал
     if before.channel and before.channel != after.channel:
-        logger.info(f"Участник {member.id} покинул канал {before.channel.id} и перешёл в другой. Удаляем старые find-сообщения.")
+        logger.info(
+            f"Пользователь {member.id} покинул канал {before.channel.id} в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}, удаляем старые find-сообщения.")
         await find_message_delete(before.channel.guild, member)
         temp_channels = load_temp_channels()
         if str(before.channel.id) in temp_channels:
             if len(before.channel.members) == 0:
-                logger.info(f"Канал {before.channel.id} пуст, удаляем его.")
+                logger.info(
+                    f"Канал {before.channel.id} пуст, удаляем его в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}.")
                 await before.channel.delete()
                 del temp_channels[str(before.channel.id)]
                 save_temp_channels(temp_channels)
 
+    # Если участник подключился к новому каналу
     if after.channel and after.channel != before.channel:
+        connection_time = datetime.utcnow()  # фиксируем время подключения
+        logger.info(
+            f"[CONNECT] Пользователь {member.id} подключился к каналу {after.channel.id} в {connection_time.strftime('%Y-%m-%d %H:%M:%S.%f')}")
         voice_channel_id = after.channel.id
-        logger.info(f"Участник {member.id} присоединился к каналу {voice_channel_id}")
 
         search_voice_channel_ids = await read_from_guild_settings_db(guild_id, "party_find_voice_channel_id")
         search_voice_channel_ids = [clean_channel_id(id_str) for id_str in search_voice_channel_ids]
@@ -131,77 +142,111 @@ async def find_party_controller(member, before, after):
                 channel_name = channel_name[:100]
 
             max_bitrate = after.channel.guild.bitrate_limit
-            logger.info(f"Создаём временный канал с именем '{channel_name}' и битрейтом {max_bitrate} для участника {member.id}")
-
+            logger.info(
+                f"[CREATE] Создаем временный канал с именем '{channel_name}' и битрейтом {max_bitrate} для пользователя {member.id} в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}")
             creation_start = datetime.utcnow()
             plan_used = None
             new_channel = None
             creation_interval = None
+            plan_logs = {}  # для логирования этапов плана B, если понадобится
 
-            try:
-                # План A: пытаемся создать канал с таймаутом 2 секунды
-                new_channel = await asyncio.wait_for(
-                    after.channel.guild.create_voice_channel(
-                        channel_name,
-                        bitrate=max_bitrate,
-                        category=after.channel.category
-                    ),
-                    timeout=2
-                )
-                creation_end = datetime.utcnow()
-                creation_interval = (creation_end - creation_start).total_seconds()
-                plan_used = "A"
-                logger.info(f"План A: создан канал {new_channel.id} за {creation_interval:.3f} секунд.")
-            except asyncio.TimeoutError:
-                creation_end = datetime.utcnow()
-                creation_interval = (creation_end - creation_start).total_seconds()
-                plan_used = "B"
-                logger.info("Время создания канала превысило 2 секунды, переключаемся на план B (резервный канал).")
+            # Если тестирование включено, чередуем сценарии
+            if TESTING:
+                if TEST_PLAN_TOGGLE % 2 == 0:
+                    # Форсируем план A: пытаемся создать канал (без таймаута)
+                    forced_plan = "A"
+                else:
+                    forced_plan = "B"
+                TEST_PLAN_TOGGLE += 1
+            else:
+                forced_plan = None
+
+            if forced_plan == "A" or (forced_plan is None):
+                try:
+                    new_channel = await asyncio.wait_for(
+                        after.channel.guild.create_voice_channel(
+                            channel_name,
+                            bitrate=max_bitrate,
+                            category=after.channel.category
+                        ),
+                        timeout=2
+                    )
+                    creation_end = datetime.utcnow()
+                    creation_interval = (creation_end - creation_start).total_seconds()
+                    plan_used = "A"
+                    logger.info(
+                        f"[PLAN A] Канал {new_channel.id} создан в {creation_end.strftime('%Y-%m-%d %H:%M:%S.%f')} за {creation_interval:.3f} секунд.")
+                except asyncio.TimeoutError:
+                    creation_end = datetime.utcnow()
+                    creation_interval = (creation_end - creation_start).total_seconds()
+                    plan_used = "B"
+                    logger.info(
+                        f"[PLAN A Timeout] Создание канала превысило 2 секунды в {creation_end.strftime('%Y-%m-%d %H:%M:%S.%f')}, переключаемся на план B.")
+                except Exception as e:
+                    creation_end = datetime.utcnow()
+                    creation_interval = (creation_end - creation_start).total_seconds()
+                    plan_used = "Error"
+                    logger.info(
+                        f"[PLAN A Error] Ошибка создания канала: {e} в {creation_end.strftime('%Y-%m-%d %H:%M:%S.%f')}")
+
+            # Если план A не сработал или форсирован план B
+            if plan_used == "B" or forced_plan == "B":
+                # Зафиксируем момент, когда план A не сработал
+                fallback_trigger_time = datetime.utcnow()
+                logger.info(
+                    f"[PLAN B] Начало работы плана B в {fallback_trigger_time.strftime('%Y-%m-%d %H:%M:%S.%f')}")
                 overwrites = {
                     guild.default_role: discord.PermissionOverwrite(view_channel=False),
                     guild.get_role(923183831094284318): discord.PermissionOverwrite(view_channel=True)
                 }
-                new_channel, fallback_interval = await use_reserved_channel(bot, guild, after.channel.category, channel_name, overwrites, member)
+                new_channel, fallback_interval, plan_b_logs = await use_reserved_channel(bot, guild,
+                                                                                         after.channel.category,
+                                                                                         channel_name, overwrites,
+                                                                                         member)
                 creation_interval = fallback_interval
-                # Запускаем задачу очистки, если вдруг канал по плану A появится позже
+                plan_logs.update(plan_b_logs)
+                plan_used = "B"
+
+                logger.info(
+                    f"[PLAN B] Резервный канал {new_channel.id} обновлен в {plan_b_logs.get('update_end', 'нет данных')} и участник перемещен в {plan_b_logs.get('moved_reserved', 'нет данных')}")
+                # Если вдруг появится канал по плану A, запускаем очистку
                 asyncio.create_task(cleanup_plan_a_channel(guild, after.channel.category, channel_name, new_channel))
-            except Exception as e:
-                creation_end = datetime.utcnow()
-                creation_interval = (creation_end - creation_start).total_seconds()
-                plan_used = "Error"
-                logger.info(f"Ошибка при создании канала: {e}")
 
             # Сохраняем данные временного канала
             temp_channels = load_temp_channels()
             temp_channels[str(new_channel.id)] = {"guild_id": guild_id}
             save_temp_channels(temp_channels)
 
+            movement_start = datetime.utcnow()
             if member.voice and member.voice.channel:
-                logger.info(f"Перемещаем участника {member.id} в канал {new_channel.id}.")
+                logger.info(
+                    f"[MOVE] Перемещаем участника {member.id} в канал {new_channel.id} в {movement_start.strftime('%Y-%m-%d %H:%M:%S.%f')}.")
                 try:
                     await member.move_to(new_channel)
                 except Exception as e:
                     logger.info(f"Ошибка перемещения участника: {e}")
+            movement_end = datetime.utcnow()
+            movement_interval = (movement_end - movement_start).total_seconds()
 
-                button_data = {
-                    "voice_id": f"id_{new_channel.id}",
-                    "creator_id": f"id_{member.id}"
-                }
-                logger.info(f"Отправляем сообщение управления на канале {new_channel.id}.")
-                control_message = await new_channel.send(await get_phrase("Channel Management", guild_id))
-                logger.info(f"Записываем данные кнопок для сообщения {control_message.id}.")
-                await write_to_buttons_db(guild.id, control_message.id, "VoiceChannelControl", button_data, member.id)
-                voice_button_view = VoiceChannelCcontrol(guild_id, member.id, new_channel.id)
-                await voice_button_view.initialize_buttons()
-                await control_message.edit(view=voice_button_view)
-            else:
-                logger.info(f"Участник {member.id} не в голосовом канале после создания. Удаляем канал {new_channel.id}.")
-                await new_channel.delete()
-                return
+            # Отправка сообщения управления
+            button_data = {
+                "voice_id": f"id_{new_channel.id}",
+                "creator_id": f"id_{member.id}"
+            }
+            logger.info(
+                f"[BUTTON] Отправляем сообщение управления на канале {new_channel.id} в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}.")
+            control_message = await new_channel.send(await get_phrase("Channel Management", guild_id))
+            logger.info(
+                f"[BUTTON] Сообщение управления {control_message.id} отправлено в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}.")
+            await write_to_buttons_db(guild.id, control_message.id, "VoiceChannelControl", button_data, member.id)
+            voice_button_view = VoiceChannelCcontrol(guild_id, member.id, new_channel.id)
+            await voice_button_view.initialize_buttons()
+            await control_message.edit(view=voice_button_view)
 
+            # Дополнительная логика по ролям и инвайтам (без изменений)
             member_data = await read_member_data_from_db(member, 'party_find_mode')
             if member_data and member_data.get('data') == 'off':
-                logger.info(f"Режим поиска компании отключён для участника {member.id}.")
+                logger.info(f"[MODE] Режим поиска компании отключён для участника {member.id}.")
             else:
                 for activity in member.activities:
                     if activity.type == discord.ActivityType.playing:
@@ -210,18 +255,22 @@ async def find_party_controller(member, before, after):
                         is_valid_game = is_game_valid(activity.name)
                         if role is None and is_valid_game:
                             random_color = random.randint(0, 0xFFFFFF)
-                            logger.info(f"Создаём роль '{role_name}' для участника {member.id} с цветом {random_color}.")
-                            role = await after.channel.guild.create_role(name=role_name, color=discord.Color(random_color))
+                            logger.info(
+                                f"[ROLE] Создаем роль '{role_name}' для участника {member.id} с цветом {random_color}.")
+                            role = await after.channel.guild.create_role(name=role_name,
+                                                                         color=discord.Color(random_color))
                             await add_game_in_game_roles_channel(role, after.channel.guild)
                         if role not in member.roles and is_valid_game:
-                            logger.info(f"Добавляем роль {role.id} участнику {member.id}.")
+                            logger.info(f"[ROLE] Добавляем роль {role.id} участнику {member.id}.")
                             await member.add_roles(role)
                 if member.voice and member.voice.channel:
                     for activity in member.activities:
                         if activity.type == discord.ActivityType.playing:
-                            search_text_channel_ids = await read_from_guild_settings_db(guild_id, "party_find_text_channel_id")
+                            search_text_channel_ids = await read_from_guild_settings_db(guild_id,
+                                                                                        "party_find_text_channel_id")
                             search_text_channel_ids = [clean_channel_id(id_str) for id_str in search_text_channel_ids]
-                            logger.info(f"Создаём инвайт для канала {new_channel.id}.")
+                            logger.info(
+                                f"[INVITE] Создаем инвайт для канала {new_channel.id} в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}.")
                             invite = await new_channel.create_invite(max_age=3600, max_uses=99)
                             for text_channel_id in search_text_channel_ids:
                                 text_channel = member.guild.get_channel(text_channel_id)
@@ -230,13 +279,62 @@ async def find_party_controller(member, before, after):
                                         content=f"{member.mention} {await get_phrase('looking for a company', guild)} {new_channel.mention}.\n## <@&{role.id}>"
                                     )
                                     invite_data = {"invite": invite.url}
-                                    logger.info(f"Записываем данные для кнопки присоединения для сообщения {find_message.id} в канале {text_channel.id}.")
-                                    await write_to_buttons_db(guild.id, find_message.id, "JoinButton", invite_data, member.id)
+                                    logger.info(
+                                        f"[INVITE] Записываем данные для кнопки присоединения для сообщения {find_message.id} в канале {text_channel.id} в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}.")
+                                    await write_to_buttons_db(guild.id, find_message.id, "JoinButton", invite_data,
+                                                              member.id)
                                     join_button_view = JoinButton(invite, guild_id, activity, member.id)
                                     await join_button_view.initialize_buttons()
                                     await find_message.edit(view=join_button_view)
                                     break
                             asyncio.create_task(check_member_in_channel(member, new_channel, find_message, invite))
+    logger.info(
+        f"[END] Завершена обработка участника {member.id} в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}")
+
+    # Формируем итоговый embed-отчёт с подробными метками времени
+    # Замеряем интервал создания/обновления и перемещения
+    total_interval = 0
+    if creation_start and creation_end:
+        total_interval += (creation_end - creation_start).total_seconds()
+    total_interval += movement_interval
+
+    # Определяем цвет embed по суммарному времени
+    if total_interval >= 5:
+        embed_color = "#8B0000"
+    elif total_interval <= 1:
+        embed_color = "#00FF7F"
+    else:
+        embed_color = "#20B2AA"
+
+    report_embed = discord.Embed(title="Private Voice Update Report", color=discord.Color.from_str(embed_color))
+    report_embed.add_field(name="План", value=f"План {plan_used}", inline=False)
+    report_embed.add_field(name="Время подключения", value=connection_time.strftime('%Y-%m-%d %H:%M:%S.%f'),
+                           inline=False)
+    report_embed.add_field(name="Начало создания", value=creation_start.strftime('%Y-%m-%d %H:%M:%S.%f'), inline=False)
+    report_embed.add_field(name="Окончание создания/обновления", value=creation_end.strftime('%Y-%m-%d %H:%M:%S.%f'),
+                           inline=False)
+    report_embed.add_field(name="Интервал создания/обновления", value=f"{creation_interval:.3f} секунд", inline=False)
+    report_embed.add_field(name="Время перемещения", value=movement_end.strftime('%Y-%m-%d %H:%M:%S.%f'), inline=False)
+    report_embed.add_field(name="Интервал перемещения", value=f"{movement_interval:.3f} секунд", inline=False)
+    report_embed.add_field(name="Суммарное время (создание+перемещение)", value=f"{total_interval:.3f} секунд",
+                           inline=False)
+    if plan_used == "B":
+        report_embed.add_field(name="План B: Начало обновления", value=plan_logs.get('update_start', 'нет данных'),
+                               inline=False)
+        report_embed.add_field(name="План B: Окончание обновления", value=plan_logs.get('update_end', 'нет данных'),
+                               inline=False)
+        report_embed.add_field(name="План B: Перемещение в резервный канал",
+                               value=plan_logs.get('moved_reserved', 'нет данных'), inline=False)
+    report_embed.timestamp = datetime.utcnow()
+
+    report_channel = guild.get_channel(1353656805116477530)
+    if report_channel:
+        try:
+            await report_channel.send(embed=report_embed)
+        except Exception as e:
+            logger.info(f"Ошибка отправки отчёта: {e}")
+    else:
+        logger.info("Текстовый канал для отчётов не найден.")
     logger.info(f"[END] Завершена обработка участника {member.id}")
 
     # Формируем итоговый embed-отчёт
