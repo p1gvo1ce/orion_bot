@@ -326,6 +326,12 @@ async def find_party_controller(member, before, after):
     logger.info(
         f"[END] Завершена обработка участника {member.id} в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}")
 
+    # В конце функции, перед формированием embed, делаем проверку:
+    if plan_used is None or new_channel is None:
+        # Значит, мы не делали фактическое создание/обновление канала
+        logger.info("Пропускаем отправку embed, т.к. не было создания канала.")
+        return
+
     total_interval = 0
     if creation_start is not None and creation_end is not None:
         total_interval += (creation_end - creation_start).total_seconds()
@@ -367,12 +373,6 @@ async def find_party_controller(member, before, after):
     report_embed.timestamp = datetime.utcnow()
 
     report_channel = guild.get_channel(1353656805116477530)
-
-    # В конце функции, перед формированием embed, делаем проверку:
-    if plan_used is None or new_channel is None:
-        # Значит, мы не делали фактическое создание/обновление канала
-        logger.info("Пропускаем отправку embed, т.к. не было создания канала.")
-        return
 
     if report_channel:
         try:
