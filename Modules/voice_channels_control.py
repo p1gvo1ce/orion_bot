@@ -367,7 +367,7 @@ async def find_party_controller(member, before, after):
     report_embed.timestamp = datetime.utcnow()
 
     report_channel = guild.get_channel(1353656805116477530)
-    if report_channel:
+    if report_channel and plan_used:
         try:
             await report_channel.send(embed=report_embed)
         except Exception as e:
