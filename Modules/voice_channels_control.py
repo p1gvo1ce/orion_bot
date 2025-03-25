@@ -118,15 +118,12 @@ TEST_PLAN_TOGGLE = 0  # Будет чередоваться: четное зна
 async def find_party_controller(member, before, after):
     global TESTING, TEST_PLAN_TOGGLE
     logger = get_logger()
-    # Фиксируем время подключения
     connection_time = datetime.utcnow()
     logger.info(
         f"[START] [{connection_time.strftime('%Y-%m-%d %H:%M:%S.%f')}] Обработка изменения голосового канала для участника {member.id}")
 
-    # Имя канала по умолчанию – имя или ник участника
     channel_name = member.nick if member.nick else member.name
 
-    # Если участник покинул предыдущий канал, удаляем временные сообщения и канал
     if before.channel and before.channel != after.channel:
         logger.info(
             f"[LEAVE] Пользователь {member.id} покинул канал {before.channel.id} в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}, удаляем старые find-сообщения.")
@@ -140,14 +137,14 @@ async def find_party_controller(member, before, after):
                 del temp_channels[str(before.channel.id)]
                 save_temp_channels(temp_channels)
 
-    # Инициализируем переменные этапов
+    # Инициализация переменных этапов
     creation_start = None
     creation_end = None
     movement_start = None
     movement_end = None
     movement_interval = 0
+    plan_used = "0"
 
-    # Если участник подключился к новому каналу
     if after.channel and after.channel != before.channel:
         connection_time = datetime.utcnow()
         logger.info(
@@ -175,7 +172,6 @@ async def find_party_controller(member, before, after):
             creation_interval = None
             plan_logs = {}
 
-            # Тестирование: принудительное чередование планов
             global TESTING, TEST_PLAN_TOGGLE
             if TESTING:
                 forced_plan = "A" if (TEST_PLAN_TOGGLE % 2 == 0) else "B"
@@ -183,7 +179,6 @@ async def find_party_controller(member, before, after):
             else:
                 forced_plan = None
 
-            # План A: пытаемся создать канал с таймаутом 2 секунды
             if forced_plan == "A" or (forced_plan is None):
                 try:
                     new_channel = await asyncio.wait_for(
@@ -199,6 +194,25 @@ async def find_party_controller(member, before, after):
                     plan_used = "A"
                     logger.info(
                         f"[PLAN A] Канал {new_channel.id} создан в {creation_end.strftime('%Y-%m-%d %H:%M:%S.%f')} за {creation_interval:.3f} секунд.")
+                    # Синхронизируем права канала с правами категории и добавляем права для владельца
+                    try:
+                        await new_channel.edit(sync_permissions=True)
+                        # Берем права из видимой категории
+                        visible_category = after.channel.category
+                        base_overwrites = visible_category.overwrites.copy() if visible_category.overwrites else {}
+                        base_overwrites.update({
+                            member: discord.PermissionOverwrite(
+                                manage_channels=True,
+                                mute_members=True,
+                                deafen_members=True,
+                                move_members=True,
+                                manage_permissions=True
+                            )
+                        })
+                        await new_channel.edit(overwrites=base_overwrites)
+                        logger.info(f"[PLAN A] Права для владельца добавлены для канала {new_channel.id}.")
+                    except Exception as e:
+                        logger.info(f"[PLAN A] Ошибка при установке прав владельца: {e}")
                 except asyncio.TimeoutError:
                     creation_end = datetime.utcnow()
                     creation_interval = (creation_end - creation_start).total_seconds()
@@ -212,7 +226,6 @@ async def find_party_controller(member, before, after):
                     logger.info(
                         f"[PLAN A Error] Ошибка создания канала: {e} в {creation_end.strftime('%Y-%m-%d %H:%M:%S.%f')}")
 
-            # Если план A не сработал или принудительно выбран план B
             if plan_used == "B" or forced_plan == "B":
                 fallback_trigger_time = datetime.utcnow()
                 logger.info(
@@ -230,15 +243,12 @@ async def find_party_controller(member, before, after):
                 plan_logs.update(plan_b_logs)
                 plan_used = "B"
                 logger.info(f"[PLAN B] Резервный канал {new_channel.id} обновлен, данные: {plan_b_logs}")
-                # Если вдруг появится канал по плану A, запускаем задачу очистки
                 asyncio.create_task(cleanup_plan_a_channel(guild, after.channel.category, channel_name, new_channel))
 
-            # Если новый канал так и не создан, выходим
             if new_channel is None:
                 logger.info(f"[ERROR] new_channel не создан для пользователя {member.id}")
                 return
 
-            # Сохраняем данные временного канала
             temp_channels = load_temp_channels()
             temp_channels[str(new_channel.id)] = {"guild_id": guild_id}
             save_temp_channels(temp_channels)
@@ -254,7 +264,6 @@ async def find_party_controller(member, before, after):
             movement_end = datetime.utcnow()
             movement_interval = (movement_end - movement_start).total_seconds()
 
-            # Отправка сообщения управления
             button_data = {
                 "voice_id": f"id_{new_channel.id}",
                 "creator_id": f"id_{member.id}"
@@ -269,7 +278,6 @@ async def find_party_controller(member, before, after):
             await voice_button_view.initialize_buttons()
             await control_message.edit(view=voice_button_view)
 
-            # Дополнительная логика по ролям и инвайтам
             member_data = await read_member_data_from_db(member, 'party_find_mode')
             if member_data and member_data.get('data') == 'off':
                 logger.info(f"[MODE] Режим поиска компании отключён для участника {member.id}.")
@@ -317,7 +325,6 @@ async def find_party_controller(member, before, after):
     logger.info(
         f"[END] Завершена обработка участника {member.id} в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}")
 
-    # Формируем итоговый embed-отчёт с подробными метками времени
     total_interval = 0
     if creation_start is not None and creation_end is not None:
         total_interval += (creation_end - creation_start).total_seconds()
