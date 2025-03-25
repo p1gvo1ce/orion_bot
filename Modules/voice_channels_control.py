@@ -76,19 +76,16 @@ async def use_reserved_channel(bot, guild, visible_category, new_channel_name, o
         await reserved_channel.edit(sync_permissions=True)
         # Обновляем имя канала
         await reserved_channel.edit(name=new_channel_name)
-        # Теперь даём владельцу канала (member) дополнительные права:
-        owner_overwrite = {
-            member: discord.PermissionOverwrite(
-                manage_channels=True,
-                mute_members=True,
-                deafen_members=True,
-                move_members=True,
-                manage_permissions=True
-            )
-        }
-        # Обновляем пермишены канала: добавляем разрешения для владельца
-        current_overwrites = reserved_channel.overwrites
-        current_overwrites.update(owner_overwrite)
+        # После синхронизации получаем копию прав категории
+        current_overwrites = visible_category.overwrites.copy()
+        # Добавляем для владельца (member) дополнительные права
+        current_overwrites[member] = discord.PermissionOverwrite(
+            manage_channels=True,
+            mute_members=True,
+            deafen_members=True,
+            move_members=True,
+            manage_permissions=True
+        )
         await reserved_channel.edit(overwrites=current_overwrites)
     except Exception as e:
         print("Ошибка при обновлении резервного канала:", e)
