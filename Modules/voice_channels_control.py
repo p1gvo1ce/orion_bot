@@ -120,63 +120,43 @@ TEST_PLAN_TOGGLE = 0  # Будет чередоваться: четное зна
 
 async def find_party_controller(member, before, after):
     global TESTING, TEST_PLAN_TOGGLE
-
     logger = get_logger()
+    # Фиксируем время подключения
     connection_time = datetime.utcnow()
     logger.info(
         f"[START] [{connection_time.strftime('%Y-%m-%d %H:%M:%S.%f')}] Обработка изменения голосового канала для участника {member.id}")
 
-    creation_start = None
-    creation_end = None
-    movement_interval = 0
-
-    if after.channel and after.channel != before.channel:
-        connection_time = datetime.utcnow()
-        logger.info(
-            f"[CONNECT] Пользователь {member.id} подключился к каналу {after.channel.id} в {connection_time.strftime('%Y-%m-%d %H:%M:%S.%f')}")
-        ...
-        creation_start = datetime.utcnow()
-        plan_used = None
-        new_channel = None
-        creation_interval = None
-        plan_logs = {}
-        # План A / B логика ...
-        # Если участник перемещается:
-        movement_start = datetime.utcnow()
-        if member.voice and member.voice.channel:
-            logger.info(
-                f"[MOVE] Перемещаем участника {member.id} в канал {new_channel.id} в {movement_start.strftime('%Y-%m-%d %H:%M:%S.%f')}.")
-            try:
-                await member.move_to(new_channel)
-            except Exception as e:
-                logger.info(f"Ошибка перемещения участника: {e}")
-        movement_end = datetime.utcnow()
-        movement_interval = (movement_end - movement_start).total_seconds()
-
-    guild_id = member.guild.id
-    guild = member.guild
     # Имя канала по умолчанию – имя или ник участника
     channel_name = member.nick if member.nick else member.name
 
     # Если участник покинул предыдущий канал, удаляем временные сообщения и канал
     if before.channel and before.channel != after.channel:
         logger.info(
-            f"Пользователь {member.id} покинул канал {before.channel.id} в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}, удаляем старые find-сообщения.")
+            f"[LEAVE] Пользователь {member.id} покинул канал {before.channel.id} в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}, удаляем старые find-сообщения.")
         await find_message_delete(before.channel.guild, member)
         temp_channels = load_temp_channels()
         if str(before.channel.id) in temp_channels:
             if len(before.channel.members) == 0:
                 logger.info(
-                    f"Канал {before.channel.id} пуст, удаляем его в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}.")
+                    f"[CLEANUP] Канал {before.channel.id} пуст, удаляем его в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}.")
                 await before.channel.delete()
                 del temp_channels[str(before.channel.id)]
                 save_temp_channels(temp_channels)
 
+    # Инициализируем переменные этапов
+    creation_start = None
+    creation_end = None
+    movement_start = None
+    movement_end = None
+    movement_interval = 0
+
     # Если участник подключился к новому каналу
     if after.channel and after.channel != before.channel:
-        connection_time = datetime.utcnow()  # фиксируем время подключения
+        connection_time = datetime.utcnow()
         logger.info(
             f"[CONNECT] Пользователь {member.id} подключился к каналу {after.channel.id} в {connection_time.strftime('%Y-%m-%d %H:%M:%S.%f')}")
+        guild_id = member.guild.id
+        guild = member.guild
         voice_channel_id = after.channel.id
 
         search_voice_channel_ids = await read_from_guild_settings_db(guild_id, "party_find_voice_channel_id")
@@ -196,23 +176,21 @@ async def find_party_controller(member, before, after):
             plan_used = None
             new_channel = None
             creation_interval = None
-            plan_logs = {}  # для логирования этапов плана B, если понадобится
+            plan_logs = {}
 
-            # Если тестирование включено, чередуем сценарии
+            # Тестирование: принудительное чередование планов
+            global TESTING, TEST_PLAN_TOGGLE
             if TESTING:
-                if TEST_PLAN_TOGGLE % 2 == 0:
-                    # Форсируем план A: пытаемся создать канал (без таймаута)
-                    forced_plan = "A"
-                else:
-                    forced_plan = "B"
+                forced_plan = "A" if (TEST_PLAN_TOGGLE % 2 == 0) else "B"
                 TEST_PLAN_TOGGLE += 1
             else:
                 forced_plan = None
 
+            # План A: пытаемся создать канал с таймаутом 2 секунды
             if forced_plan == "A" or (forced_plan is None):
                 try:
                     new_channel = await asyncio.wait_for(
-                        after.channel.guild.create_voice_channel(
+                        guild.create_voice_channel(
                             channel_name,
                             bitrate=max_bitrate,
                             category=after.channel.category
@@ -237,9 +215,8 @@ async def find_party_controller(member, before, after):
                     logger.info(
                         f"[PLAN A Error] Ошибка создания канала: {e} в {creation_end.strftime('%Y-%m-%d %H:%M:%S.%f')}")
 
-            # Если план A не сработал или форсирован план B
+            # Если план A не сработал или принудительно выбран план B
             if plan_used == "B" or forced_plan == "B":
-                # Зафиксируем момент, когда план A не сработал
                 fallback_trigger_time = datetime.utcnow()
                 logger.info(
                     f"[PLAN B] Начало работы плана B в {fallback_trigger_time.strftime('%Y-%m-%d %H:%M:%S.%f')}")
@@ -251,14 +228,18 @@ async def find_party_controller(member, before, after):
                                                                                          after.channel.category,
                                                                                          channel_name, overwrites,
                                                                                          member)
+                creation_end = datetime.utcnow()
                 creation_interval = fallback_interval
                 plan_logs.update(plan_b_logs)
                 plan_used = "B"
-
-                logger.info(
-                    f"[PLAN B] Резервный канал {new_channel.id} обновлен в {plan_b_logs.get('update_end', 'нет данных')} и участник перемещен в {plan_b_logs.get('moved_reserved', 'нет данных')}")
-                # Если вдруг появится канал по плану A, запускаем очистку
+                logger.info(f"[PLAN B] Резервный канал {new_channel.id} обновлен, данные: {plan_b_logs}")
+                # Если вдруг появится канал по плану A, запускаем задачу очистки
                 asyncio.create_task(cleanup_plan_a_channel(guild, after.channel.category, channel_name, new_channel))
+
+            # Если новый канал так и не создан, выходим
+            if new_channel is None:
+                logger.info(f"[ERROR] new_channel не создан для пользователя {member.id}")
+                return
 
             # Сохраняем данные временного канала
             temp_channels = load_temp_channels()
@@ -272,7 +253,7 @@ async def find_party_controller(member, before, after):
                 try:
                     await member.move_to(new_channel)
                 except Exception as e:
-                    logger.info(f"Ошибка перемещения участника: {e}")
+                    logger.info(f"[MOVE ERROR] Ошибка перемещения участника: {e}")
             movement_end = datetime.utcnow()
             movement_interval = (movement_end - movement_start).total_seconds()
 
@@ -291,7 +272,7 @@ async def find_party_controller(member, before, after):
             await voice_button_view.initialize_buttons()
             await control_message.edit(view=voice_button_view)
 
-            # Дополнительная логика по ролям и инвайтам (без изменений)
+            # Дополнительная логика по ролям и инвайтам
             member_data = await read_member_data_from_db(member, 'party_find_mode')
             if member_data and member_data.get('data') == 'off':
                 logger.info(f"[MODE] Режим поиска компании отключён для участника {member.id}.")
@@ -340,11 +321,17 @@ async def find_party_controller(member, before, after):
         f"[END] Завершена обработка участника {member.id} в {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}")
 
     # Формируем итоговый embed-отчёт с подробными метками времени
-    # Замеряем интервал создания/обновления и перемещения
     total_interval = 0
     if creation_start is not None and creation_end is not None:
         total_interval += (creation_end - creation_start).total_seconds()
     total_interval += movement_interval
+
+    if total_interval >= 5:
+        embed_color = "#8B0000"
+    elif total_interval <= 1:
+        embed_color = "#00FF7F"
+    else:
+        embed_color = "#20B2AA"
 
     report_embed = discord.Embed(title="Private Voice Update Report", color=discord.Color.from_str(embed_color))
     report_embed.add_field(name="План", value=f"План {plan_used}", inline=False)
@@ -359,8 +346,9 @@ async def find_party_controller(member, before, after):
     report_embed.add_field(name="Интервал создания/обновления",
                            value=f"{creation_interval:.3f} секунд" if creation_interval is not None else "нет данных",
                            inline=False)
-    report_embed.add_field(name="Время перемещения", value=movement_end.strftime(
-        '%Y-%m-%d %H:%M:%S.%f') if 'movement_end' in locals() else "нет данных", inline=False)
+    report_embed.add_field(name="Время перемещения",
+                           value=movement_end.strftime('%Y-%m-%d %H:%M:%S.%f') if movement_end else "нет данных",
+                           inline=False)
     report_embed.add_field(name="Интервал перемещения", value=f"{movement_interval:.3f} секунд", inline=False)
     report_embed.add_field(name="Суммарное время (создание+перемещение)", value=f"{total_interval:.3f} секунд",
                            inline=False)
@@ -371,25 +359,6 @@ async def find_party_controller(member, before, after):
                                inline=False)
         report_embed.add_field(name="План B: Перемещение в резервный канал",
                                value=plan_logs.get('moved_reserved', 'нет данных'), inline=False)
-    report_embed.timestamp = datetime.utcnow()
-
-    report_channel = guild.get_channel(1353656805116477530)
-    if report_channel:
-        try:
-            await report_channel.send(embed=report_embed)
-        except Exception as e:
-            logger.info(f"Ошибка отправки отчёта: {e}")
-    else:
-        logger.info("Текстовый канал для отчётов не найден.")
-    logger.info(f"[END] Завершена обработка участника {member.id}")
-
-    # Формируем итоговый embed-отчёт
-    creation_interval = (creation_end - creation_start).total_seconds() if creation_start and creation_end else 0
-
-
-    report_embed = discord.Embed(title="Private Voice Update Report")
-    report_embed.add_field(name="План", value=f"План {plan_used}", inline=False)
-    report_embed.add_field(name="Интервал создания/обновления", value=f"{creation_interval:.3f} секунд", inline=False)
     report_embed.timestamp = datetime.utcnow()
 
     report_channel = guild.get_channel(1353656805116477530)
