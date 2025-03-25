@@ -47,10 +47,10 @@ async def check_and_remove_nonexistent_channels():
 
 # Функция для использования резервного канала (План Б)
 async def use_reserved_channel(bot, guild, visible_category, new_channel_name, overwrites, member):
-    # Резервная категория с ID 1353976761234362369
+    update_logs = {}
+    # Получаем резервную категорию (ID: 1353976761234362369)
     reserved_category = guild.get_channel(1353976761234362369)
     if not reserved_category:
-        # Если не найдено – создаём скрытую категорию
         reserved_category = await guild.create_category(
             "Reserved Channels",
             overwrites={guild.default_role: discord.PermissionOverwrite(view_channel=False)}
@@ -67,20 +67,41 @@ async def use_reserved_channel(bot, guild, visible_category, new_channel_name, o
             category=reserved_category,
             overwrites=overwrites
         )
-    # Засекаем время обновления: переименование, синхронизация пермишенов, перемещение в видимую категорию
-    update_start = datetime.utcnow()
+    # Засекаем время начала обновления
+    update_logs['update_start'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
     try:
-        await reserved_channel.edit(name=new_channel_name, overwrites=overwrites, category=visible_category)
+        # Перемещаем канал в видимую категорию
+        await reserved_channel.edit(category=visible_category)
+        # Синхронизируем права канала с правами новой категории
+        await reserved_channel.edit(sync_permissions=True)
+        # Обновляем имя канала
+        await reserved_channel.edit(name=new_channel_name)
+        # Теперь даём владельцу канала (member) дополнительные права:
+        owner_overwrite = {
+            member: discord.PermissionOverwrite(
+                manage_channels=True,
+                mute_members=True,
+                deafen_members=True,
+                move_members=True,
+                manage_permissions=True
+            )
+        }
+        # Обновляем пермишены канала: добавляем разрешения для владельца
+        current_overwrites = reserved_channel.overwrites
+        current_overwrites.update(owner_overwrite)
+        await reserved_channel.edit(overwrites=current_overwrites)
     except Exception as e:
         print("Ошибка при обновлении резервного канала:", e)
-    update_end = datetime.utcnow()
-    update_interval = (update_end - update_start).total_seconds()
+    update_logs['update_end'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
     # Перемещаем участника в этот канал
     try:
         await member.move_to(reserved_channel)
     except Exception as e:
         print("Ошибка перемещения участника в резервный канал:", e)
-    return reserved_channel, update_interval
+    update_logs['moved_reserved'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
+    update_interval = (datetime.strptime(update_logs['update_end'], '%Y-%m-%d %H:%M:%S.%f') -
+                       datetime.strptime(update_logs['update_start'], '%Y-%m-%d %H:%M:%S.%f')).total_seconds()
+    return reserved_channel, update_interval, update_logs
 
 # Если по плану A вдруг канал появится – удаляем его, чтобы не плодить лишние
 async def cleanup_plan_a_channel(guild, visible_category, new_channel_name, fallback_channel):
@@ -104,6 +125,33 @@ async def find_party_controller(member, before, after):
     connection_time = datetime.utcnow()
     logger.info(
         f"[START] [{connection_time.strftime('%Y-%m-%d %H:%M:%S.%f')}] Обработка изменения голосового канала для участника {member.id}")
+
+    creation_start = None
+    creation_end = None
+    movement_interval = 0
+
+    if after.channel and after.channel != before.channel:
+        connection_time = datetime.utcnow()
+        logger.info(
+            f"[CONNECT] Пользователь {member.id} подключился к каналу {after.channel.id} в {connection_time.strftime('%Y-%m-%d %H:%M:%S.%f')}")
+        ...
+        creation_start = datetime.utcnow()
+        plan_used = None
+        new_channel = None
+        creation_interval = None
+        plan_logs = {}
+        # План A / B логика ...
+        # Если участник перемещается:
+        movement_start = datetime.utcnow()
+        if member.voice and member.voice.channel:
+            logger.info(
+                f"[MOVE] Перемещаем участника {member.id} в канал {new_channel.id} в {movement_start.strftime('%Y-%m-%d %H:%M:%S.%f')}.")
+            try:
+                await member.move_to(new_channel)
+            except Exception as e:
+                logger.info(f"Ошибка перемещения участника: {e}")
+        movement_end = datetime.utcnow()
+        movement_interval = (movement_end - movement_start).total_seconds()
 
     guild_id = member.guild.id
     guild = member.guild
@@ -294,27 +342,25 @@ async def find_party_controller(member, before, after):
     # Формируем итоговый embed-отчёт с подробными метками времени
     # Замеряем интервал создания/обновления и перемещения
     total_interval = 0
-    if creation_start and creation_end:
+    if creation_start is not None and creation_end is not None:
         total_interval += (creation_end - creation_start).total_seconds()
     total_interval += movement_interval
-
-    # Определяем цвет embed по суммарному времени
-    if total_interval >= 5:
-        embed_color = "#8B0000"
-    elif total_interval <= 1:
-        embed_color = "#00FF7F"
-    else:
-        embed_color = "#20B2AA"
 
     report_embed = discord.Embed(title="Private Voice Update Report", color=discord.Color.from_str(embed_color))
     report_embed.add_field(name="План", value=f"План {plan_used}", inline=False)
     report_embed.add_field(name="Время подключения", value=connection_time.strftime('%Y-%m-%d %H:%M:%S.%f'),
                            inline=False)
-    report_embed.add_field(name="Начало создания", value=creation_start.strftime('%Y-%m-%d %H:%M:%S.%f'), inline=False)
-    report_embed.add_field(name="Окончание создания/обновления", value=creation_end.strftime('%Y-%m-%d %H:%M:%S.%f'),
+    report_embed.add_field(name="Начало создания",
+                           value=creation_start.strftime('%Y-%m-%d %H:%M:%S.%f') if creation_start else "нет данных",
                            inline=False)
-    report_embed.add_field(name="Интервал создания/обновления", value=f"{creation_interval:.3f} секунд", inline=False)
-    report_embed.add_field(name="Время перемещения", value=movement_end.strftime('%Y-%m-%d %H:%M:%S.%f'), inline=False)
+    report_embed.add_field(name="Окончание создания/обновления",
+                           value=creation_end.strftime('%Y-%m-%d %H:%M:%S.%f') if creation_end else "нет данных",
+                           inline=False)
+    report_embed.add_field(name="Интервал создания/обновления",
+                           value=f"{creation_interval:.3f} секунд" if creation_interval is not None else "нет данных",
+                           inline=False)
+    report_embed.add_field(name="Время перемещения", value=movement_end.strftime(
+        '%Y-%m-%d %H:%M:%S.%f') if 'movement_end' in locals() else "нет данных", inline=False)
     report_embed.add_field(name="Интервал перемещения", value=f"{movement_interval:.3f} секунд", inline=False)
     report_embed.add_field(name="Суммарное время (создание+перемещение)", value=f"{total_interval:.3f} секунд",
                            inline=False)
