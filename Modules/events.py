@@ -118,21 +118,18 @@ async def join_from_invite(member):
 
 
 async def greetings_delete_greetings(message):
-    # Monitor specific channel for stale greeting buttons
+    # Отслеживаем конкретный канал
     if message.channel.id == 930430671086845953:
-        # Look back at the last 10 messages
-        async for msg in message.channel.history(limit=10):
-            if msg.author == bot.user and msg.components:
-                for row in msg.components:
-                    for comp in row.children:
-                        custom = getattr(comp, 'custom_id', '')
-                        if custom.startswith('greet_'):
-                            _, uid = custom.split('_')
-                            uid = int(uid)
-                            # If member no longer on server, delete the prompt
-                            if not msg.guild.get_member(uid):
-                                await msg.delete()
-    # Ensure commands still process
+        # Только сообщения бота с приветствием
+        if message.author.id == bot.user.id and "Встречайте" in message.content:
+            # Ищем первое упоминание участника
+            match = re.search(r"<@!?(\d+)>", message.content)
+            if match:
+                uid = int(match.group(1))
+                # Если участник уже не в гильдии — удаляем сообщение
+                if not message.guild.get_member(uid):
+                    await message.delete()
+    # Всегда продолжаем обработку команд
     await bot.process_commands(message)
 
 async def get_actor(guild):
