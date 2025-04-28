@@ -36,17 +36,19 @@ class GreetingView(discord.ui.View):
     def __init__(self, member: discord.Member):
         super().__init__(timeout=None)
         self.member = member
-        # Button with custom_id embedding the new member's ID
-        self.add_item(discord.ui.Button(
+        # Create a dynamic button with custom callback
+        btn = discord.ui.Button(
             label='Помашите и поздоровайтесь',
             custom_id=f'greet_{member.id}',
             style=discord.ButtonStyle.primary
-        ))
+        )
+        btn.callback = self.greet_callback
+        self.add_item(btn)
 
-    @discord.ui.button(label='Помашите и поздоровайтесь', style=discord.ButtonStyle.primary)
-    async def greet_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Extract user ID from button custom_id
-        _, uid = button.custom_id.split('_')
+    async def greet_callback(self, interaction: discord.Interaction):
+        # Extract user ID from the button's custom_id
+        custom_id = getattr(interaction.data, 'custom_id', None) or interaction.component.custom_id
+        _, uid = custom_id.split('_')
         uid = int(uid)
         guild = interaction.guild
         target = guild.get_member(uid)
@@ -61,25 +63,20 @@ class GreetingView(discord.ui.View):
             )
             embed.set_image(url=random.choice(greetings))
 
-            greeting_msg = await interaction.response.send_message(embed=embed, mention_author=False)
+            # Send the embed without mentioning author
+            await interaction.response.send_message(embed=embed, mention_author=False)
 
             # Schedule deletion after 2 minutes
-            async def delete_later(msg: discord.Message):
+            async def delete_later(chan):
                 await asyncio.sleep(120)
                 try:
-                    await msg.delete()
+                    # Attempt to delete the last bot message
+                    last = (await chan.history(limit=1).flatten())[0]
+                    await last.delete()
                 except Exception:
                     pass
 
-            # Grab the sent message object from the response
-            if isinstance(greeting_msg, discord.Message):
-                msg_obj = greeting_msg
-            else:
-                # fetch last message in channel by bot
-                history = await interaction.channel.history(limit=1).flatten()
-                msg_obj = history[0]
-
-            asyncio.create_task(delete_later(msg_obj))
+            asyncio.create_task(delete_later(interaction.channel))
         else:
             # Member left, remove the button message
             try:
@@ -89,13 +86,13 @@ class GreetingView(discord.ui.View):
 
 
 async def join_from_invite(member):
-    # Send greeting prompt in a default channel (adjust as needed)
-    channel = member.guild.get_channel(861309266617696327 )
-    if not channel:
+    # Send greeting prompt in the specific channel
+    channel = member.guild.get_channel(861309266617696327)
+    if not channel or not channel.permissions_for(member.guild.me).send_messages:
         return
 
     view = GreetingView(member)
-    # Send a welcome-type message tagging the new member
+    # Send a welcome message tagging the new member
     await channel.send(f'Встречайте {member.mention}! Не стесняйтесь поздороваться 👋', view=view)
 
 
