@@ -1,6 +1,7 @@
 import discord
 import asyncio
 import random
+import os
 from datetime import datetime
 from discord import Permissions
 
@@ -63,15 +64,29 @@ class GreetingView(discord.ui.View):
                 description=f'{greeter.mention} приветствует {target.mention}',
                 color=0x66CDAA
             )
-            # Добавляем GIF как изображение embed'а
-            gif_url = random.choice(greetings)
-            embed.set_image(url=gif_url)
 
-            # Блокируем любые упоминания
-            await interaction.response.send_message(
-                embed=embed,
-                allowed_mentions=discord.AllowedMentions.none()
-            )
+            # Получаем случайный файл GIF из локальной папки gifs/greetings
+            gifs_dir = 'gifs/greetings'
+            try:
+                files = [f for f in os.listdir(gifs_dir) if f.lower().endswith('.gif')]
+                filename = random.choice(files)
+                file_path = os.path.join(gifs_dir, filename)
+                discord_file = discord.File(file_path, filename=filename)
+                # Устанавливаем изображение embed как вложение
+                embed.set_image(url=f"attachment://{filename}")
+                # Отправляем сообщение с вложением файла
+                await interaction.response.send_message(
+                    embed=embed,
+                    file=discord_file,
+                    allowed_mentions=discord.AllowedMentions.none()
+                )
+            except (IndexError, FileNotFoundError) as e:
+                # Если папка пуста или нет доступа — логируем и отправляем без GIF
+                print(f"Error loading GIF: {e}")
+                await interaction.response.send_message(
+                    embed=embed,
+                    allowed_mentions=discord.AllowedMentions.none()
+                )
 
             # Удаляем сообщение через 2 минуты
             async def delete_later(chan):
