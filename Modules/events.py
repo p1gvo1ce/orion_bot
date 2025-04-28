@@ -57,14 +57,17 @@ class GreetingView(discord.ui.View):
 
         if target:
             greeter = interaction.user
+            # embed с новым цветом #66CDAA (0x66CDAA)
             embed = discord.Embed(
                 title='Новый привет!',
                 description=f'{greeter.mention} приветствует {target.mention}',
-                color=discord.Color.blue()
+                color=0x66CDAA
             )
-            embed.set_image(url=random.choice(greetings))
+            # Добавляем GIF как изображение embed'а
+            gif_url = random.choice(greetings)
+            embed.set_image(url=gif_url)
 
-            # Используем discord.AllowedMentions.none() для блокировки упоминаний
+            # Блокируем любые упоминания
             await interaction.response.send_message(
                 embed=embed,
                 allowed_mentions=discord.AllowedMentions.none()
