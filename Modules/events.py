@@ -46,7 +46,6 @@ class GreetingView(discord.ui.View):
         self.add_item(btn)
 
     async def greet_callback(self, interaction: discord.Interaction):
-        # Берём custom_id из данных
         custom_id = interaction.data.get('custom_id', '')
         if not custom_id.startswith('greet_'):
             return
@@ -58,14 +57,19 @@ class GreetingView(discord.ui.View):
 
         if target:
             greeter = interaction.user
-            # embed с цветом #66CDAA
+            # Если тот же самый пользователь нажал на свою кнопку
+            if greeter.id == uid:
+                description = f'{greeter.mention} приветствует всех!'
+            else:
+                description = f'{greeter.mention} приветствует {target.mention}'
+
             embed = discord.Embed(
                 title='Новый привет!',
-                description=f'{greeter.mention} приветствует {target.mention}',
+                description=description,
                 color=0x66CDAA
             )
 
-            # Получаем случайный файл GIF из локальной папки gifs/greetings
+            # Работа с GIF из локальной директории
             gifs_dir = 'gifs/greetings'
             try:
                 files = [f for f in os.listdir(gifs_dir) if f.lower().endswith('.gif')]
@@ -73,8 +77,6 @@ class GreetingView(discord.ui.View):
                 file_path = os.path.join(gifs_dir, filename)
                 discord_file = discord.File(file_path, filename=filename)
                 embed.set_image(url=f"attachment://{filename}")
-
-                # Отправляем сообщение и получаем объект отправленного сообщения
                 await interaction.response.send_message(
                     embed=embed,
                     file=discord_file,
@@ -89,7 +91,7 @@ class GreetingView(discord.ui.View):
                 )
                 sent_msg = await interaction.original_response()
 
-            # Удаляем именно отправленное сообщение через 2 минуты
+            # Удаление сообщения через 2 минуты
             async def delete_later(msg):
                 await asyncio.sleep(120)
                 try:
@@ -99,7 +101,7 @@ class GreetingView(discord.ui.View):
 
             asyncio.create_task(delete_later(sent_msg))
         else:
-            # Если участник вышел — удаляем кнопку
+            # Пользователь вышел: удаляем сообщение с кнопкой
             try:
                 await interaction.message.delete()
             except Exception:
