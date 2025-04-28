@@ -12,7 +12,7 @@ from Modules.logger import (log_joined_member, log_channel_event, log_voice_stat
                             log_member_muted, log_member_left, log_member_unmuted, log_role_event)
 
 from utils import get_bot
-from Modules.greetings import greetengs
+from Modules.greetings import greetings
 
 bot = get_bot()
 
