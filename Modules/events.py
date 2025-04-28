@@ -141,7 +141,8 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-    await join_from_invite(member)
+    # await join_from_invite(member)
+    pass
 
 @bot.event
 async def on_message(message):
