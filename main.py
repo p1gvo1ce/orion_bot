@@ -16,7 +16,7 @@ from Modules.role_control import game_role_reaction_add, game_role_reaction_remo
 from Modules.events import (bot_start, join_from_invite, greetings_delete_greetings, start_copy_logs_to_analytics,
                             on_guild_role_create, on_guild_role_update, on_guild_role_delete, on_guild_channel_create,
                             on_guild_channel_update, on_guild_channel_delete, on_voice_state_update, on_member_ban,
-                            on_member_update)
+                            on_member_update, on_ready_check_greetings_buttons)
 from Modules.logger import log_new_message, log_edited_message, log_deleted_message
 from Modules.ublyudoshnaya import bolnoy_ublyudok
 
@@ -27,7 +27,7 @@ GITHUB_API_URL = "https://api.github.com/repos/p1gvo1ce/orion_bot/commits/master
 tracemalloc.start()
 
 listeners = {
-    'on_ready': ['bot_start', 'start_copy_logs_to_analytics', 'update_buttons_on_start'],
+    'on_ready': ['bot_start', 'start_copy_logs_to_analytics', 'update_buttons_on_start', 'on_ready_check_greetings_buttons'],
     'on_member_join': ['join_from_invite'],
     'on_voice_state_update': ['on_voice_state_update', 'find_party_controller'],
     'on_raw_reaction_add': ['game_role_reaction_add'],

@@ -2,6 +2,7 @@ import discord
 import asyncio
 import random
 import os
+import re
 from datetime import datetime
 from discord import Permissions
 
@@ -19,6 +20,9 @@ bot = get_bot()
 
 invitations = {}
 
+
+GREETING_CHANNEL_ID = 930430671086845953
+
 async def bot_start():
     print(f'Logged in as {bot.user.name}')
     await bot.tree.sync()
@@ -32,10 +36,11 @@ async def start_copy_logs_to_analytics():
 
 
 
-
+# --- Persistent Greeting View ---
 class GreetingView(discord.ui.View):
     def __init__(self, member: discord.Member):
-        super().__init__(timeout=None)
+        # persistent=True для вечных кнопок
+        super().__init__(timeout=None, persistent=True)
         self.member = member
         btn = discord.ui.Button(
             label='Помашите и поздоровайтесь',
@@ -51,25 +56,18 @@ class GreetingView(discord.ui.View):
             return
         _, uid_str = custom_id.split('_', 1)
         uid = int(uid_str)
-
         guild = interaction.guild
         target = guild.get_member(uid)
 
         if target:
             greeter = interaction.user
-            # Если тот же самый пользователь нажал на свою кнопку
             if greeter.id == uid:
-                description = f'{greeter.mention} приветствует всех!'
+                desc = f'{greeter.mention} приветствует всех!'
             else:
-                description = f'{greeter.mention} приветствует {target.mention}'
+                desc = f'{greeter.mention} приветствует {target.mention}'
+            embed = discord.Embed(title='Новый привет!', description=desc, color=0x66CDAA)
 
-            embed = discord.Embed(
-                title='Новый привет!',
-                description=description,
-                color=0x66CDAA
-            )
-
-            # Работа с GIF из локальной директории
+            # выбираем случайный GIF из локальной папки
             gifs_dir = 'gifs/greetings'
             try:
                 files = [f for f in os.listdir(gifs_dir) if f.lower().endswith('.gif')]
@@ -82,30 +80,62 @@ class GreetingView(discord.ui.View):
                     file=discord_file,
                     allowed_mentions=discord.AllowedMentions.none()
                 )
-                sent_msg = await interaction.original_response()
-            except (IndexError, FileNotFoundError) as e:
-                print(f"Error loading GIF: {e}")
+                sent = await interaction.original_response()
+            except Exception:
                 await interaction.response.send_message(
                     embed=embed,
                     allowed_mentions=discord.AllowedMentions.none()
                 )
-                sent_msg = await interaction.original_response()
+                sent = await interaction.original_response()
 
-            # Удаление сообщения через 2 минуты
+            # удаляем именно это сообщение через 2 минуты
             async def delete_later(msg):
                 await asyncio.sleep(120)
                 try:
                     await msg.delete()
-                except Exception:
+                except:
                     pass
-
-            asyncio.create_task(delete_later(sent_msg))
+            asyncio.create_task(delete_later(sent))
         else:
-            # Пользователь вышел: удаляем сообщение с кнопкой
             try:
                 await interaction.message.delete()
-            except Exception:
+            except:
                 pass
+
+# --- Bot startup and persistent view registration ---
+@bot.event
+async def on_ready_check_greetings_buttons():
+    print(f'Logged in as {bot.user}')
+    # Синхронизируем команды
+    await bot.tree.sync()
+    # Чистим устаревшие каналы
+    await check_and_remove_nonexistent_channels()
+
+    # Сохраняем текущие инвайты
+    for guild in bot.guilds:
+        invitations[guild.id] = await guild.invites()
+
+    # Запускаем периодические задачи
+    asyncio.create_task(periodic_check_for_guilds(bot))
+    asyncio.create_task(copy_logs_to_analytics(bot.guilds))
+
+    # Регистрируем persistent views для уже отправленных приветствий
+    channel = bot.get_channel(GREETING_CHANNEL_ID)
+    if channel:
+        async for msg in channel.history(limit=200):
+            if msg.author.id == bot.user.id and msg.components:
+                # находим кнопку с custom_id "greet_<id>"
+                for row in msg.components:
+                    for comp in row.children:
+                        cid = getattr(comp, 'custom_id', '')
+                        if cid.startswith('greet_'):
+                            _, uid_str = cid.split('_', 1)
+                            member = msg.guild.get_member(int(uid_str))
+                            if member:
+                                view = GreetingView(member)
+                                # регистрируем View для конкретного сообщения
+                                bot.add_view(view, message_id=msg.id)
+                            break
 
 
 async def join_from_invite(member):
