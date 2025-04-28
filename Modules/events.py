@@ -90,7 +90,7 @@ class GreetingView(discord.ui.View):
 
             # Удаляем сообщение через 2 минуты
             async def delete_later(chan):
-                await asyncio.sleep(120)
+                await asyncio.sleep(30)
                 try:
                     last = (await chan.history(limit=1).flatten())[0]
                     await last.delete()
