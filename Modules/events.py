@@ -45,10 +45,10 @@ class GreetingView(discord.ui.View):
         self.add_item(btn)
 
     async def greet_callback(self, interaction: discord.Interaction):
-        # Забираем custom_id прямо из данных, а не из несуществующего .component
+        # Берём custom_id из данных
         custom_id = interaction.data.get('custom_id', '')
         if not custom_id.startswith('greet_'):
-            return  # Если чёрт знает что — выходим
+            return
         _, uid_str = custom_id.split('_', 1)
         uid = int(uid_str)
 
@@ -64,13 +64,13 @@ class GreetingView(discord.ui.View):
             )
             embed.set_image(url=random.choice(greetings))
 
-            # Запрещаем любые упоминания автора (и вообще любые)
+            # Используем discord.AllowedMentions.none() для блокировки упоминаний
             await interaction.response.send_message(
                 embed=embed,
-                allowed_mentions=AllowedMentions(users=False, roles=False, everyone=False)
+                allowed_mentions=discord.AllowedMentions.none()
             )
 
-            # Убираем сообщение через 2 минуты
+            # Удаляем сообщение через 2 минуты
             async def delete_later(chan):
                 await asyncio.sleep(120)
                 try:
@@ -81,7 +81,7 @@ class GreetingView(discord.ui.View):
 
             asyncio.create_task(delete_later(interaction.channel))
         else:
-            # Чувак вышел из сервера — удаляем кнопку
+            # Если участник вышел — удаляем кнопку
             try:
                 await interaction.message.delete()
             except Exception:
