@@ -41,9 +41,9 @@ class GreetingView(discord.ui.View):
         super().__init__(timeout=None)
         self.member = member
         btn = discord.ui.Button(
-            label='Помашите и поздоровайтесь',
+            label='👋 Помашите и поздоровайтесь',
             custom_id=f'greet_{member.id}',
-            style=discord.ButtonStyle.primary
+            style=discord.ButtonStyle.success
         )
         btn.callback = self.greet_callback
         self.add_item(btn)
