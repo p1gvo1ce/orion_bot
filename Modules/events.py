@@ -36,7 +36,6 @@ class GreetingView(discord.ui.View):
     def __init__(self, member: discord.Member):
         super().__init__(timeout=None)
         self.member = member
-        # Create a dynamic button with custom callback
         btn = discord.ui.Button(
             label='Помашите и поздоровайтесь',
             custom_id=f'greet_{member.id}',
@@ -46,14 +45,13 @@ class GreetingView(discord.ui.View):
         self.add_item(btn)
 
     async def greet_callback(self, interaction: discord.Interaction):
-        # Забираем custom_id из interaction.data
+        # Забираем custom_id прямо из данных, а не из несуществующего .component
         custom_id = interaction.data.get('custom_id', '')
         if not custom_id.startswith('greet_'):
-            # Ну если вдруг не то, чё-то мутное
-            return
-
+            return  # Если чёрт знает что — выходим
         _, uid_str = custom_id.split('_', 1)
         uid = int(uid_str)
+
         guild = interaction.guild
         target = guild.get_member(uid)
 
@@ -65,8 +63,14 @@ class GreetingView(discord.ui.View):
                 color=discord.Color.blue()
             )
             embed.set_image(url=random.choice(greetings))
-            await interaction.response.send_message(embed=embed, mention_author=False)
 
+            # Запрещаем любые упоминания автора (и вообще любые)
+            await interaction.response.send_message(
+                embed=embed,
+                allowed_mentions=AllowedMentions(users=False, roles=False, everyone=False)
+            )
+
+            # Убираем сообщение через 2 минуты
             async def delete_later(chan):
                 await asyncio.sleep(120)
                 try:
@@ -77,6 +81,7 @@ class GreetingView(discord.ui.View):
 
             asyncio.create_task(delete_later(interaction.channel))
         else:
+            # Чувак вышел из сервера — удаляем кнопку
             try:
                 await interaction.message.delete()
             except Exception:
