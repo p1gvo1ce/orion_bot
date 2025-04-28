@@ -46,14 +46,17 @@ class GreetingView(discord.ui.View):
         self.add_item(btn)
 
     async def greet_callback(self, interaction: discord.Interaction):
-        # Extract user ID from the button's custom_id
-        custom_id = getattr(interaction.data, 'custom_id', None) or interaction.component.custom_id
-        _, uid = custom_id.split('_')
-        uid = int(uid)
+        # Забираем custom_id из interaction.data
+        custom_id = interaction.data.get('custom_id', '')
+        if not custom_id.startswith('greet_'):
+            # Ну если вдруг не то, чё-то мутное
+            return
+
+        _, uid_str = custom_id.split('_', 1)
+        uid = int(uid_str)
         guild = interaction.guild
         target = guild.get_member(uid)
 
-        # If user still in guild, send embed greeting
         if target:
             greeter = interaction.user
             embed = discord.Embed(
@@ -62,15 +65,11 @@ class GreetingView(discord.ui.View):
                 color=discord.Color.blue()
             )
             embed.set_image(url=random.choice(greetings))
-
-            # Send the embed without mentioning author
             await interaction.response.send_message(embed=embed, mention_author=False)
 
-            # Schedule deletion after 2 minutes
             async def delete_later(chan):
                 await asyncio.sleep(120)
                 try:
-                    # Attempt to delete the last bot message
                     last = (await chan.history(limit=1).flatten())[0]
                     await last.delete()
                 except Exception:
@@ -78,7 +77,6 @@ class GreetingView(discord.ui.View):
 
             asyncio.create_task(delete_later(interaction.channel))
         else:
-            # Member left, remove the button message
             try:
                 await interaction.message.delete()
             except Exception:
