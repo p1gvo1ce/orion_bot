@@ -1,5 +1,6 @@
 import discord
 import asyncio
+import random
 from datetime import datetime
 from discord import Permissions
 
@@ -11,6 +12,7 @@ from Modules.logger import (log_joined_member, log_channel_event, log_voice_stat
                             log_member_muted, log_member_left, log_member_unmuted, log_role_event)
 
 from utils import get_bot
+from Modules.greetings import greetengs
 
 bot = get_bot()
 
@@ -27,36 +29,93 @@ async def bot_start():
 async def start_copy_logs_to_analytics():
     await copy_logs_to_analytics(bot.guilds)
 
+
+
+
+class GreetingView(discord.ui.View):
+    def __init__(self, member: discord.Member):
+        super().__init__(timeout=None)
+        self.member = member
+        # Button with custom_id embedding the new member's ID
+        self.add_item(discord.ui.Button(
+            label='Помашите и поздоровайтесь',
+            custom_id=f'greet_{member.id}',
+            style=discord.ButtonStyle.primary
+        ))
+
+    @discord.ui.button(label='Помашите и поздоровайтесь', style=discord.ButtonStyle.primary)
+    async def greet_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Extract user ID from button custom_id
+        _, uid = button.custom_id.split('_')
+        uid = int(uid)
+        guild = interaction.guild
+        target = guild.get_member(uid)
+
+        # If user still in guild, send embed greeting
+        if target:
+            greeter = interaction.user
+            embed = discord.Embed(
+                title='Новый привет!',
+                description=f'{greeter.mention} приветствует {target.mention}',
+                color=discord.Color.blue()
+            )
+            embed.set_image(url=random.choice(greetings))
+
+            greeting_msg = await interaction.response.send_message(embed=embed, mention_author=False)
+
+            # Schedule deletion after 2 minutes
+            async def delete_later(msg: discord.Message):
+                await asyncio.sleep(120)
+                try:
+                    await msg.delete()
+                except Exception:
+                    pass
+
+            # Grab the sent message object from the response
+            if isinstance(greeting_msg, discord.Message):
+                msg_obj = greeting_msg
+            else:
+                # fetch last message in channel by bot
+                history = await interaction.channel.history(limit=1).flatten()
+                msg_obj = history[0]
+
+            asyncio.create_task(delete_later(msg_obj))
+        else:
+            # Member left, remove the button message
+            try:
+                await interaction.message.delete()
+            except Exception:
+                pass
+
+
 async def join_from_invite(member):
-    inviter, invite_code = '', ''
-    guild = member.guild
-    invites_before = invitations[guild.id]
-    invites_after = await guild.invites()
+    # Send greeting prompt in a default channel (adjust as needed)
+    channel = member.guild.get_channel(861309266617696327 )
+    if not channel:
+        return
 
-    for invite in invites_before:
-        for after in invites_after:
-            if invite.code == after.code:
-                if invite.uses < after.uses:
-                    inviter = invite.inviter
-                    invite_code = invite.code
-                    break
+    view = GreetingView(member)
+    # Send a welcome-type message tagging the new member
+    await channel.send(f'Встречайте {member.mention}! Не стесняйтесь поздороваться 👋', view=view)
 
-
-    await log_joined_member(member, inviter.id, invite_code)
-    invitations[guild.id] = invites_after
 
 async def greetings_delete_greetings(message):
-    if message.reference:
-        guild_settings = await read_from_guild_settings_db(message.guild.id, 'removing_greetings')
-        if guild_settings and guild_settings[0] == 'on':
-            delay = int((await read_from_guild_settings_db(message.guild.id, 'removing_greetings_delay'))[0])
-            original_message = await message.channel.fetch_message(message.reference.message_id)
-            if original_message.type == discord.MessageType.new_member and original_message.author in message.guild.members:
-                await asyncio.sleep(delay)
-                await message.delete()
-            elif original_message.type == discord.MessageType.new_member and original_message.author not in message.guild.members:
-                await message.delete()
-                await original_message.delete()
+    # Monitor specific channel for stale greeting buttons
+    if message.channel.id == 930430671086845953:
+        # Look back at the last 10 messages
+        async for msg in message.channel.history(limit=10):
+            if msg.author == bot.user and msg.components:
+                for row in msg.components:
+                    for comp in row.children:
+                        custom = getattr(comp, 'custom_id', '')
+                        if custom.startswith('greet_'):
+                            _, uid = custom.split('_')
+                            uid = int(uid)
+                            # If member no longer on server, delete the prompt
+                            if not msg.guild.get_member(uid):
+                                await msg.delete()
+    # Ensure commands still process
+    await bot.process_commands(message)
 
 async def get_actor(guild):
     async for entry in guild.audit_logs(action=discord.AuditLogAction.channel_update, limit=1):
