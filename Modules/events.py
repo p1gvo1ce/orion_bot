@@ -58,7 +58,7 @@ class GreetingView(discord.ui.View):
 
         if target:
             greeter = interaction.user
-            # embed с новым цветом #66CDAA (0x66CDAA)
+            # embed с цветом #66CDAA
             embed = discord.Embed(
                 title='Новый привет!',
                 description=f'{greeter.mention} приветствует {target.mention}',
@@ -72,32 +72,32 @@ class GreetingView(discord.ui.View):
                 filename = random.choice(files)
                 file_path = os.path.join(gifs_dir, filename)
                 discord_file = discord.File(file_path, filename=filename)
-                # Устанавливаем изображение embed как вложение
                 embed.set_image(url=f"attachment://{filename}")
-                # Отправляем сообщение с вложением файла
+
+                # Отправляем сообщение и получаем объект отправленного сообщения
                 await interaction.response.send_message(
                     embed=embed,
                     file=discord_file,
                     allowed_mentions=discord.AllowedMentions.none()
                 )
+                sent_msg = await interaction.original_response()
             except (IndexError, FileNotFoundError) as e:
-                # Если папка пуста или нет доступа — логируем и отправляем без GIF
                 print(f"Error loading GIF: {e}")
                 await interaction.response.send_message(
                     embed=embed,
                     allowed_mentions=discord.AllowedMentions.none()
                 )
+                sent_msg = await interaction.original_response()
 
-            # Удаляем сообщение через 2 минуты
-            async def delete_later(chan):
-                await asyncio.sleep(30)
+            # Удаляем именно отправленное сообщение через 2 минуты
+            async def delete_later(msg):
+                await asyncio.sleep(120)
                 try:
-                    last = (await chan.history(limit=1).flatten())[0]
-                    await last.delete()
+                    await msg.delete()
                 except Exception:
                     pass
 
-            asyncio.create_task(delete_later(interaction.channel))
+            asyncio.create_task(delete_later(sent_msg))
         else:
             # Если участник вышел — удаляем кнопку
             try:
