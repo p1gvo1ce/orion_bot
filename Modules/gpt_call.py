@@ -30,7 +30,7 @@ async def gen_open_ai_text_tunnel(role, text):
             ],
             max_tokens=1000,
             model="gpt-4.1-mini",
-            temperature=0.1
+            temperature=0.8
         )
         # Извлечение статистики по токенам
         usage = completion.usage
