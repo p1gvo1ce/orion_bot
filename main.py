@@ -11,7 +11,7 @@ from Modules.buttons import update_buttons_on_start
 from Modules.commands import (create_party_search_channel, game_popularity_chart, top_games_command, language,
                               create_top_games_roles, set_voice_name, dont_update_roles, set_utc_time, logging_system,
                               get_logs)
-from Modules.voice_channels_control import find_party_controller
+from Modules.voice_channels_control import find_party_controller, voice_name_moderation
 from Modules.role_control import game_role_reaction_add, game_role_reaction_remove
 from Modules.events import (bot_start, join_from_invite, greetings_delete_greetings, start_copy_logs_to_analytics,
                             on_guild_role_create, on_guild_role_update, on_guild_role_delete, on_guild_channel_create,
@@ -29,7 +29,7 @@ tracemalloc.start()
 listeners = {
     'on_ready': ['bot_start', 'start_copy_logs_to_analytics', 'update_buttons_on_start'],
     'on_member_join': ['join_from_invite'],
-    'on_voice_state_update': ['on_voice_state_update', 'find_party_controller'],
+    'on_voice_state_update': ['on_voice_state_update', 'find_party_controller', 'voice_name_moderation'],
     'on_raw_reaction_add': ['game_role_reaction_add'],
     'on_raw_reaction_remove': ['game_role_reaction_remove'],
     'on_message': ['greetings_delete_greetings', 'log_new_message', 'bolnoy_ublyudok'],

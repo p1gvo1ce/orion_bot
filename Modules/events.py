@@ -175,7 +175,6 @@ async def on_guild_channel_delete(channel):
 @bot.event
 async def on_voice_state_update(member, before, after):
     await log_voice_state_update(member, before, after)
-    await voice_name_moderation(member, before, after)
 
 @bot.event
 async def on_member_ban(guild, user):
