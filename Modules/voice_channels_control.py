@@ -237,24 +237,29 @@ ride, cream, stroke, grind, service, punishment, chains, leash, latex, collar, w
         )
         response = ""
         for i in range(10):
-            response = await gpt_call(prompt, role="moderator")
+            raw_response = await gpt_call(prompt, role="moderator")
 
-            if isinstance(response, str):
+            if isinstance(raw_response, str):
                 try:
-                    response = json.loads(response)  # <-- вот здесь сохраняем в ту же переменную
+                    response = json.loads(raw_response)
                 except json.JSONDecodeError as e:
                     print(f"❌ Ошибка парсинга JSON от модели: {e}")
                     continue
+            else:
+                response = raw_response
 
             if not isinstance(response, dict):
                 print("❌ Ответ не является словарём даже после парсинга.")
                 continue
 
-            # 💾 Сохраняем в кэш только словарь
+            # 💾 Кэшируем только валидный словарь
             channel_name_cache[channel_name] = response
             with open(CACHE_FILE, 'w', encoding='utf-8') as f:
                 json.dump(channel_name_cache, f, ensure_ascii=False, indent=2)
             break
+        else:
+            print("❌ Не удалось получить валидный ответ после 10 попыток")
+            return  # <- или fallback
 
     # 🔧 Если название не прошло модерацию
     if not response.get("is_allowed", True):
