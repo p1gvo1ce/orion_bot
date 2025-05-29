@@ -12,11 +12,20 @@ from Modules.text_channels_control import add_game_in_game_roles_channel
 from utils import clean_channel_id, get_bot, is_game_valid, get_logger
 from Modules.phrases import get_phrase
 from Modules.buttons import JoinButton, VoiceChannelCcontrol
+from Modules.gpt_call import gpt_call
 
 temp_channels_path = os.path.join("Data", "temp_channels.json")
 
 bot = get_bot()
 logger = get_logger()
+
+def validate_gpt_response(data: dict) -> bool:
+    return (
+        isinstance(data, dict) and
+        "is_allowed" in data and isinstance(data["is_allowed"], bool) and
+        "new_name" in data and isinstance(data["new_name"], str) and
+        "user_message" in data and isinstance(data["user_message"], str)
+    )
 
 def load_temp_channels():
     if os.path.exists(temp_channels_path):
@@ -115,7 +124,142 @@ async def cleanup_plan_a_channel(guild, visible_category, new_channel_name, fall
 TESTING = False  # Установи True для отладки, чтобы форсировать оба плана по очереди
 TEST_PLAN_TOGGLE = 0  # Будет чередоваться: четное значение -> план A, нечетное -> план B
 
+
+CACHE_FILE = 'channel_name_cache.json'
+
+async def voice_name_moderation(member: discord.Member, before, after):
+    if not (after.channel and after.channel.guild.id == 702588231614595172):
+        return
+
+    channel_name = after.channel.name
+
+    # 🔄 Всегда читаем актуальный кэш с диска
+    if os.path.exists(CACHE_FILE):
+        try:
+            with open(CACHE_FILE, 'r', encoding='utf-8') as f:
+                channel_name_cache = json.load(f)
+        except json.JSONDecodeError:
+            print("⚠️ Файл кэша повреждён, начинаем с чистого.")
+            channel_name_cache = {}
+    else:
+        channel_name_cache = {}
+        with open(CACHE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(channel_name_cache, f, ensure_ascii=False, indent=2)
+
+    # 📦 Проверяем, есть ли уже результат
+    if channel_name in channel_name_cache:
+        response = channel_name_cache[channel_name]
+    else:
+        prompt = (f"""
+Проверь, соответствует ли название голосового канала правилам.
+Название: '{channel_name}'. Если оно нарушает правила (оскорбительное, токсичное, троллинг, пропаганда, политика, порнография и т.д.), предложи корректное новое название и напиши короткое объяснение для пользователя, почему изменено.
+---
+Что запрещено:
+🔞 NSFW / Секс-контент (blacklist)
+
+cum, cock, pussy, tits, boobs, anal, nude, nudes, orgasm, masturbate, masturbation, blowjob, fuck, fisting,
+dildo, cumdumpster, cumslut, gangbang, orgy, pegging, rimming, jerkoff, deepthroat, handjob, porn, hentai,
+futa, yiff, yaoi, yuri, bondage, bdsm, sextoy, creampie, breeding, stepbro, stepsis, hotwife, camgirl,
+onlyfans, escort, hooker, whore, slut, milf, sugarbaby, sugardaddy, nipples, moan, suck, lick, rimjob,
+gape, squirting, wetdream, cuck, cuckold, thot, lewd, horny, dildo, vibrator
+
+💉 Наркотики / Самоповреждение / Суицид (blacklist)
+
+heroin, meth, cocaine, lsd, crack, ketamine, xanax, molly, mdma, acid, trip, overdose, selfharm,
+cutting, suicide, kys, killmyself, diealone, unalive, rope, exitbag, bleedout, depression, anorexia,
+bulimia, od, downers, uppers, fentanyl, opiates
+
+🧠 Хейт-спич и токсичность (blacklist)
+
+nazi, hitler, kkk, faggot, retard, coon, tranny, nigger, niggers, spic, dyke, gook, chink, fag,
+rape, rapist, lynch, slut, whore, pedo, pedophile, molester, childrapist, incel, killallmen,
+misogynist, neckbeard, schoolshooter
+
+💥 Насилие, терроризм (blacklist)
+
+bomb, shooting, schoolshooting, beheading, massacre, kill, murder, stab, shot, terrorism,
+terrorist, genocide, isis, alqaeda, jihad, explode, gun, ar15, bloodbath, throatcut
+
+🎰 Азартные игры и "взрослые сервисы" (graylist / audit-trigger)
+
+casino, gambling, poker, betting, lootbox, gacha, roulette, porn, camgirl, onlyfans, sugarbaby,
+escort, adultwork, premiumsnap, chaturbate, cammodel
+
+🧪 Серый список (graylist) — мемы, эвфемизмы, “пограничка”
+
+simp, trap, breedable, bussy, thicc, daddy, dom, sub, yandere, loli, shota, uwu, owo, stepmom,
+feet, toes, moaning, milkers, breed, spank, cream, tight, gagged, gagging, sugarbaby, pegging,
+licking, wet, choke, feetpics, footfetish, ddlg, ddlb, nsfw, erp, rpsex, lewd, coom, nut, goo
+
+⚠️ Общие слова, которые могут триггерить модерацию в контексте:
+
+slave, master, grooming, domination, abuse, submission, daddy, mommy, uncle, hole, meat,
+ride, cream, stroke, grind, service, punishment, chains, leash, latex, collar, whip
+---
+Ответ строго в формате JSON с полями: is_allowed (bool), new_name (str), user_message (str).
+
+
+Вот пример правильно оформленного JSON-ответа от модели, который ты можешь использовать как эталон:
+
+{
+  "is_allowed": false,
+  "new_name": "Игровая комната",
+  "user_message": "Название канала нарушает правила сообщества: содержит ненормативную лексику и может оскорбить других участников. Мы изменили его на более нейтральное. Спасибо за понимание!"
+}
+
+Или если всё нормально:
+
+{
+  "is_allowed": true,
+  "new_name": "",
+  "user_message": ""
+}
+---
+
+Правила для нового названия: нужно сохранить смысл/мем/шутку, но сделать гипертрофированно детским, милым, наивным, розовым, будто название придумал пушистый розовый единорог.
+
+Правила для сообщения пользователю: Нужно не нарушая правил объяснить что означает его название и почему так писать нельзя, почему новое название лучше и посоветовать в будущем избегать подобных наименований. Объяснять будто ты тот самый пушистый единорог разговаривающий с наивным непонимающим ребёнком.
+
+---
+Название: '{channel_name}'
+
+            """
+        )
+        response = ""
+        for i in range(10):
+
+            response = await gpt_call(prompt, role="moderator")
+
+            if isinstance(response, str):
+                try:
+                    response_json = json.loads(response)
+                except json.JSONDecodeError as e:
+                    print(f"❌ Ошибка парсинга JSON от модели: {e}")
+                    continue
+
+            # 💾 Сохраняем в кэш (дописываем поверх)
+            channel_name_cache[channel_name] = response
+            with open(CACHE_FILE, 'w', encoding='utf-8') as f:
+                json.dump(channel_name_cache, f, ensure_ascii=False, indent=2)
+            break
+
+    # 🔧 Если название не прошло модерацию
+    if not response.get("is_allowed", True):
+        new_name = response["new_name"]
+        user_message = response["user_message"]
+
+        try:
+            await after.channel.edit(name=new_name)
+            await member.send(f"🔇 Название канала {channel_name} было изменено.\n{user_message}")
+        except discord.Forbidden:
+            print(f"❌ Нет прав для переименования или отправки сообщения {member.display_name}")
+        except Exception as e:
+            print(f"❌ Ошибка при обработке: {e}")
+
+
+
 async def find_party_controller(member, before, after):
+
     global TESTING, TEST_PLAN_TOGGLE
     logger = get_logger()
     connection_time = datetime.utcnow()
