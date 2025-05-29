@@ -1,6 +1,7 @@
 import os
 import json
-from tkinter.scrolledtext import example
+from discord import HTTPException
+
 
 import discord
 import random
@@ -289,7 +290,26 @@ ride, cream, stroke, grind, service, punishment, chains, leash, latex, collar, w
 
         try:
             # Переименовываем канал
-            await after.edit(name=new_name)
+            for attempt in range(2):  # первая попытка + одна повторная
+                try:
+                    await after.edit(name=new_name)
+                    return True
+                except HTTPException as e:
+                    if e.status == 429:
+                        # Пробуем извлечь retry_after из тела ответа
+                        text = await e.response.text()
+                        try:
+                            data = json.loads(text)
+                            retry_after = data.get("retry_after", 5)
+                            print(f"⏳ Rate limit! Ждём {retry_after} сек...")
+                            await asyncio.sleep(retry_after + 1)
+                        except Exception as parse_error:
+                            print(f"❌ Не удалось распарсить retry_after: {parse_error}")
+                            await asyncio.sleep(10)  # fallback
+                    else:
+                        raise  # любые другие ошибки не трогаем
+            print(f"❌ Не удалось переименовать канал '{channel_name}' после повтора.")
+            return False
 
             # Получаем список упоминаний всех участников голосового канала
             mentions = " ".join(member.mention for member in after.members)
