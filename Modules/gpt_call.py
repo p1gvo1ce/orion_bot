@@ -32,7 +32,6 @@ async def gen_open_ai_text_tunnel(role, text):
             model="gpt-4.1-mini",
             temperature=0.1
         )
-        print(text)
         # Извлечение статистики по токенам
         usage = completion.usage
         prompt_tokens = usage.prompt_tokens
