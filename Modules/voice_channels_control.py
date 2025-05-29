@@ -127,12 +127,13 @@ TEST_PLAN_TOGGLE = 0  # Будет чередоваться: четное зна
 
 CACHE_FILE = 'channel_name_cache.json'
 
-async def voice_name_moderation(before, after):
+async def voice_name_moderation(before: discord.abc.GuildChannel, after: discord.abc.GuildChannel):
+
     print("voice moderation call")
-    if not (after.channel and after.channel.guild.id == 702588231614595172):
+    if not isinstance(after, discord.VoiceChannel):
         return
     print("voice moderation start")
-    channel_name = after.channel.name
+    channel_name = after.name
 
     # 🔄 Всегда читаем актуальный кэш с диска
     if os.path.exists(CACHE_FILE):
@@ -251,13 +252,13 @@ ride, cream, stroke, grind, service, punishment, chains, leash, latex, collar, w
 
         try:
             # Переименовываем канал
-            await after.channel.edit(name=new_name)
+            await after.edit(name=new_name)
 
             # Получаем список упоминаний всех участников голосового канала
-            mentions = " ".join(member.mention for member in after.channel.members)
+            mentions = " ".join(member.mention for member in after.members)
 
             # Получаем связанный текстовый канал (если есть)
-            text_channel = after.channel.guild.get_channel(after.channel.id)  # если id = id текстового
+            text_channel = after.guild.get_channel(after.id)  # если id = id текстового
             # Или: text_channel = after.channel.linked_channel  # если используешь связанный канал Discord'а
 
             if text_channel and text_channel.permissions_for(text_channel.guild.me).send_messages:

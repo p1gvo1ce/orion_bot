@@ -29,7 +29,7 @@ tracemalloc.start()
 listeners = {
     'on_ready': ['bot_start', 'start_copy_logs_to_analytics', 'update_buttons_on_start'],
     'on_member_join': ['join_from_invite'],
-    'on_voice_state_update': ['on_voice_state_update', 'find_party_controller', 'voice_name_moderation'],
+    'on_voice_state_update': ['on_voice_state_update', 'find_party_controller'],
     'on_raw_reaction_add': ['game_role_reaction_add'],
     'on_raw_reaction_remove': ['game_role_reaction_remove'],
     'on_message': ['greetings_delete_greetings', 'log_new_message', 'bolnoy_ublyudok'],
@@ -38,8 +38,8 @@ listeners = {
     'on_guild_role_create': ['on_guild_role_create'],
     'on_guild_role_update': ['on_guild_role_update'],
     'on_guild_role_delete': ['on_guild_role_delete'],
-    'on_guild_channel_create': ['on_guild_channel_create'],
-    'on_guild_channel_update': ['on_guild_channel_update'],
+    'on_guild_channel_create': ['on_guild_channel_create', 'voice_name_moderation'],
+    'on_guild_channel_update': ['on_guild_channel_update', 'voice_name_moderation'],
     'on_guild_channel_delete': ['on_guild_channel_delete'],
     'on_member_ban': ['on_member_ban'],
     'on_member_update': ['on_member_update']
