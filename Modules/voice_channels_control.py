@@ -309,6 +309,7 @@ ride, cream, stroke, grind, service, punishment, chains, leash, latex, collar, w
                 await text_channel.send(
                     f"🔇 Название голосового канала `{channel_name}` было изменено на `{new_name}`.\n"
                     f"{user_message}\n\n{mentions}"
+                    f"\n\n<@469306021106417664> fyi"
                 )
             else:
                 print("⚠️ Не удалось найти связанный текстовый канал или нет прав на отправку сообщений.")
