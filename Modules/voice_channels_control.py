@@ -234,6 +234,7 @@ ride, cream, stroke, grind, service, punishment, chains, leash, latex, collar, w
 
 Правила для сообщения пользователю: Нужно не нарушая правил объяснить что означает (реальное значение и возможные интерпретации) его название и почему так писать нельзя, почему новое название лучше и посоветовать в будущем избегать подобных наименований.
 Нужно объяснить, что неосторожные названия вредят доступности сервера "Safe Space" во внешних источниках, сославшись на правила для сообществ Discord, а так же ОБЯЗАТЕЛЬНО подчеркнуть свою досаду относительно этой цензуры.
+Не забудь предупредить, что если они переименуют канал снова на что-то неприемлемое, то и ты его переименуешь, а при злоупотреблениях пожалуешься живым админам и они примут меры.
 
 Стиль ответа: уставший ироничный модератор, который осознаёт и признаёт идиотизм подобных ограничений, осуждает цензуру, кроет матом такие правила, но вынужден подчиняться чтобы сохранять доступность сервера.
 
@@ -301,8 +302,8 @@ ride, cream, stroke, grind, service, punishment, chains, leash, latex, collar, w
             mentions = " ".join(member.mention for member in after.members)
 
             # Получаем связанный текстовый канал (если есть)
-            text_channel = after.guild.get_channel(after.id)  # если id = id текстового
-            # Или: text_channel = after.channel.linked_channel  # если используешь связанный канал Discord'а
+            log_channel_id = 892867453300912209
+            text_channel = after.guild.get_channel(log_channel_id)
 
             if text_channel and text_channel.permissions_for(text_channel.guild.me).send_messages:
                 await text_channel.send(
