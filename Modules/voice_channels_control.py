@@ -295,6 +295,9 @@ ride, cream, stroke, grind, service, punishment, chains, leash, latex, collar, w
         except Exception as e:
             print(f"❌ Ошибка при переименовании или рассылке: {e}")
 
+async def channel_create_name_moderation(channel):
+    await voice_name_moderation(None, channel)
+
 
 async def find_party_controller(member, before, after):
 
