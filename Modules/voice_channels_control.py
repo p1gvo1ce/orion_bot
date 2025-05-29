@@ -128,9 +128,10 @@ TEST_PLAN_TOGGLE = 0  # Будет чередоваться: четное зна
 CACHE_FILE = 'channel_name_cache.json'
 
 async def voice_name_moderation(member: discord.Member, before, after):
+    print("voice moderation call")
     if not (after.channel and after.channel.guild.id == 702588231614595172):
         return
-
+    print("voice moderation start")
     channel_name = after.channel.name
 
     # 🔄 Всегда читаем актуальный кэш с диска
