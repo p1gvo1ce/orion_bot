@@ -9,7 +9,7 @@ from discord import Permissions
 from Modules.buttons import update_buttons_on_start
 from Modules.activity_monitoring import periodic_check_for_guilds
 from Modules.db_control import read_from_guild_settings_db, copy_logs_to_analytics
-from Modules.voice_channels_control import check_and_remove_nonexistent_channels
+from Modules.voice_channels_control import check_and_remove_nonexistent_channels, voice_name_moderation
 from Modules.logger import (
     log_joined_member, log_channel_event, log_voice_state_update, log_member_banned,
     log_member_muted, log_member_left, log_member_unmuted, log_role_event
@@ -175,6 +175,7 @@ async def on_guild_channel_delete(channel):
 @bot.event
 async def on_voice_state_update(member, before, after):
     await log_voice_state_update(member, before, after)
+    await voice_name_moderation(member, before, after)
 
 @bot.event
 async def on_member_ban(guild, user):
