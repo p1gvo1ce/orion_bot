@@ -127,7 +127,7 @@ TEST_PLAN_TOGGLE = 0  # Будет чередоваться: четное зна
 
 CACHE_FILE = 'channel_name_cache.json'
 
-async def voice_name_moderation(member: discord.Member, before, after):
+async def voice_name_moderation(before, after):
     print("voice moderation call")
     if not (after.channel and after.channel.guild.id == 702588231614595172):
         return
@@ -250,13 +250,28 @@ ride, cream, stroke, grind, service, punishment, chains, leash, latex, collar, w
         user_message = response["user_message"]
 
         try:
+            # Переименовываем канал
             await after.channel.edit(name=new_name)
-            await member.send(f"🔇 Название канала {channel_name} было изменено.\n{user_message}")
-        except discord.Forbidden:
-            print(f"❌ Нет прав для переименования или отправки сообщения {member.display_name}")
-        except Exception as e:
-            print(f"❌ Ошибка при обработке: {e}")
 
+            # Получаем список упоминаний всех участников голосового канала
+            mentions = " ".join(member.mention for member in after.channel.members)
+
+            # Получаем связанный текстовый канал (если есть)
+            text_channel = after.channel.guild.get_channel(after.channel.id)  # если id = id текстового
+            # Или: text_channel = after.channel.linked_channel  # если используешь связанный канал Discord'а
+
+            if text_channel and text_channel.permissions_for(text_channel.guild.me).send_messages:
+                await text_channel.send(
+                    f"🔇 Название голосового канала `{channel_name}` было изменено на `{new_name}`.\n"
+                    f"{user_message}\n\n{mentions}"
+                )
+            else:
+                print("⚠️ Не удалось найти связанный текстовый канал или нет прав на отправку сообщений.")
+
+        except discord.Forbidden:
+            print(f"❌ Нет прав на переименование или отправку сообщения от имени бота.")
+        except Exception as e:
+            print(f"❌ Ошибка при переименовании или рассылке: {e}")
 
 
 async def find_party_controller(member, before, after):
