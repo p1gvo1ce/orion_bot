@@ -40,7 +40,6 @@ async def gen_open_ai_text_tunnel(role, text):
         total_tokens = usage.total_tokens
         cost = calculate_cost(total_tokens)
 
-        print(f"Использовано токенов: Промпт: {prompt_tokens}, Завершение: {completion_tokens}, Всего: {total_tokens}")
         print(f"Стоимость запроса: ${cost:.6f}")
 
         return completion.choices[0].message.content
