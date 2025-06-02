@@ -413,13 +413,13 @@ async def find_party_controller(member, before, after):
                         base_overwrites.update({
                             member: discord.PermissionOverwrite(
                                 manage_channels=True,
-                                mute_members=True,
-                                deafen_members=True,
+                                #mute_members=True,
+                                #deafen_members=True,
                                 move_members=True,
-                                #manage_permissions=True
+                                manage_permissions=True
                             )
                         })
-                        #await new_channel.edit(overwrites=base_overwrites)
+                        await new_channel.edit(overwrites=base_overwrites)
                         logger.info(f"[PLAN A] Права для владельца добавлены для канала {new_channel.id}.")
                     except Exception as e:
                         logger.info(f"[PLAN A] Ошибка при установке прав владельца: {e}")
