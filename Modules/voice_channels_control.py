@@ -413,9 +413,9 @@ async def find_party_controller(member, before, after):
                         base_overwrites.update({
                             member: discord.PermissionOverwrite(
                                 manage_channels=True,
-                                mute_members=True,
-                                deafen_members=True,
-                                move_members=True,
+                                #mute_members=True,
+                                #deafen_members=True,
+                                #move_members=True,
                                 manage_permissions=True
                             )
                         })
