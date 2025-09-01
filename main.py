@@ -93,8 +93,6 @@ async def main():
 
     # Запускаем костыль для голосового канала (переименование каждую минуту)
     asyncio.create_task(ensure_min_voice_channels(bot))
-    from Modules.user_status_checker import check_user_status
-    asyncio.create_task(check_user_status(bot))
 
     await run_bot(token, conn)
 
